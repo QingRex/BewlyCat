@@ -3,7 +3,7 @@
   "entry": [
     "src/contentScripts/index.ts",
     "src/contentScripts/views/**/*.{vue,ts}",
-    "src/background/appClient.ts",
+    "src/inject/youtubeFeed.ts",
     "src/logic/common-setup.ts",
     "src/options/main.ts",
     "src/popup/main.ts",

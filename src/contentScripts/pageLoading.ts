@@ -1,5 +1,5 @@
 import { BEWLY_MOUNTED } from '../constants/globalEvents'
-import { BEWLY_HOST_ID, clearStaleCustomView, CUSTOM_VIEW_HIDE_CLASS } from './pageSurface'
+import { BEWLY_HOST_ID, clearStaleCustomView } from './pageSurface'
 
 export interface PageLoadingGuard {
   /** 未进入自定义视图，或挂载失败时，撤掉隐藏标记、扩展样式和半截宿主。 */
@@ -18,9 +18,7 @@ if (!/Electron/i.test(navigator.userAgent) && !loadingGlobal.__BEWLYCAT_PAGE_LOA
 
   function removeExtensionSurface() {
     document.getElementById(BEWLY_HOST_ID)?.remove()
-    document.documentElement.classList.remove(CUSTOM_VIEW_HIDE_CLASS)
-    document.body?.classList.remove(CUSTOM_VIEW_HIDE_CLASS)
-    document.querySelectorAll('style[data-bewly-page-style]').forEach(node => node.remove())
+    clearStaleCustomView(document)
   }
 
   function stop() {

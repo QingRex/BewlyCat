@@ -43,56 +43,49 @@ type APIFunction<T = typeof API_COLLECTION> = {
   }
 }
 
-// eslint-disable-next-line ts/no-unsafe-declaration-merging
-export interface APIClient extends APIFunction<typeof API_COLLECTION> {
-
+export type APIClient = APIFunction<typeof API_COLLECTION> & {
+  [namespace: string]: Record<string, (options?: object, request?: ApiRequestOptions) => Promise<any>>
 }
 
-// eslint-disable-next-line ts/no-unsafe-declaration-merging
-export class APIClient {
-  private readonly cache = new Map<string | symbol, any>()
+function createAPIClient(): APIClient {
+  const cache = new Map<string | symbol, APIClient[string]>()
+  const client: APIClient = new Proxy({}, {
+    get: (_, namespace) => {
+      if (cache.has(namespace))
+        return cache.get(namespace)
 
-  constructor() {
-    // @ts-expect-error ignore
-    return new Proxy({}, {
-      get: (_, namespace) => { // namespace
-        if (this.cache.has(namespace)) {
-          return this.cache.get(namespace)
-        }
-        else {
-          const api = new Proxy({}, {
-            get(_, p) {
-              return (options?: object, request?: ApiRequestOptions) => {
-                const isSearchResultRequest = namespace === 'search'
-                  && typeof p === 'string'
-                  && isSearchResultApiMethod(p)
-                const requestOptions = isSearchResultRequest
-                  ? { qv_id: getSearchQueryId(p, options), ...options }
-                  : options
+      const api = new Proxy({}, {
+        get(_, p) {
+          return (options?: object, request?: ApiRequestOptions) => {
+            const isSearchResultRequest = namespace === 'search'
+              && typeof p === 'string'
+              && isSearchResultApiMethod(p)
+            const requestOptions = isSearchResultRequest
+              ? { qv_id: getSearchQueryId(p, options), ...options }
+              : options
 
-                const message: Record<string, any> = {
-                  contentScriptQuery: p as string,
-                  ...requestOptions,
-                }
+            const message: Record<string, any> = {
+              contentScriptQuery: p as string,
+              ...requestOptions,
+            }
 
-                // 去个性化搜索仍经后台获取匿名 WBI key 并签名，只省略 Cookie。
-                if (isSearchResultRequest && settings.value.depersonalizeSearchResults)
-                  message.bewlyNoCookie = true
+            // 去个性化搜索仍经后台获取匿名 WBI key 并签名，只省略 Cookie。
+            if (isSearchResultRequest && settings.value.depersonalizeSearchResults)
+              message.bewlyNoCookie = true
 
-                return request?.signal
-                  ? sendAbortableApiMessage(p as string, message, request.signal)
-                  : sendMessage(p as string, message)
-              }
-            },
-          })
-          this.cache.set(namespace, api)
-          return api
-        }
-      },
-    })
-  }
+            return request?.signal
+              ? sendAbortableApiMessage(p as string, message, request.signal)
+              : sendMessage(p as string, message)
+          }
+        },
+      })
+      cache.set(namespace, api)
+      return api
+    },
+  }) as APIClient
+  return client
 }
 
-const api = new APIClient()
+const api = createAPIClient()
 
 export default api

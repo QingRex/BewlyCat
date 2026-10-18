@@ -13,7 +13,6 @@ export function clearStaleCustomView(doc: Document): void {
   if (doc.getElementById(BEWLY_HOST_ID))
     return
 
-  doc.documentElement.classList.remove(CUSTOM_VIEW_HIDE_CLASS)
-  doc.body?.classList.remove(CUSTOM_VIEW_HIDE_CLASS)
+  doc.querySelectorAll(`.${CUSTOM_VIEW_HIDE_CLASS}`).forEach(node => node.classList.remove(CUSTOM_VIEW_HIDE_CLASS))
   doc.querySelectorAll(EXTENSION_STYLE_SELECTOR).forEach(node => node.remove())
 }

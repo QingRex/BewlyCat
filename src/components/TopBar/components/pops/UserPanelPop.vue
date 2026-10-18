@@ -9,7 +9,7 @@ import api from '~/utils/api'
 import { revokeAccessKey } from '~/utils/authProvider'
 import { numFormatter } from '~/utils/dataFormatter'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON, LV6_LIGHTNING_ICON } from '~/utils/lvIcons'
-import { getCSRF, getUserID, isActualHomepage, isHomePage } from '~/utils/main'
+import { getCSRF, isActualHomepage, isHomePage } from '~/utils/main'
 
 import type { UserInfo, UserStat } from '../../types'
 
@@ -31,57 +31,53 @@ const { t } = useI18n()
 const topBarStore = useTopBarStore()
 const { hasBCoinToReceive } = storeToRefs(topBarStore)
 
-const mid = computed(() => {
-  return props.userInfo.mid || getUserID()
-})
-
 const otherLinks = computed((): { name: string, url: string, icon: string, code?: string }[] => {
   return [
 
     {
       name: t('topbar.user_dropdown.uploads_manager'),
-      url: 'https://member.bilibili.com/platform/upload-manager/article',
+      url: 'https://studio.youtube.com',
       icon: 'i-solar:video-library-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.account_settings'),
-      url: 'https://account.bilibili.com/account/home',
+      url: 'https://www.youtube.com/account',
       icon: 'i-solar:user-circle-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.bilibili_premium'),
-      url: 'https://account.bilibili.com/big',
+      url: 'https://www.youtube.com/paid_memberships',
       icon: 'i-solar:accessibility-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.bilibili_premium_rewards'),
-      url: 'https://account.bilibili.com/account/big/myPackage',
+      url: 'https://www.youtube.com/paid_memberships',
       icon: 'i-solar:accessibility-bold-duotone',
       code: 'vip_rewards',
     },
     {
       name: t('topbar.user_dropdown.b_coins_wallet'),
-      url: 'https://pay.bilibili.com/',
+      url: 'https://www.youtube.com/paid_memberships',
       icon: 'i-solar:wallet-money-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.orders'),
-      url: 'https://show.bilibili.com/orderlist',
+      url: 'https://www.youtube.com/feed/library',
       icon: 'i-solar:clipboard-list-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.workshop'),
-      url: 'https://gf.bilibili.com?msource=main_station',
+      url: 'https://www.youtube.com/feed/storefront',
       icon: 'i-solar:garage-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.my_stream_info'),
-      url: 'https://link.bilibili.com/p/center/index',
+      url: 'https://studio.youtube.com',
       icon: 'i-solar:videocamera-record-bold-duotone',
     },
     {
       name: t('topbar.user_dropdown.my_courses'),
-      url: 'https://www.bilibili.com/cheese/mine/list',
+      url: 'https://www.youtube.com/feed/courses',
       icon: 'i-solar:notebook-bookmark-bold-duotone',
     },
   ]
@@ -172,19 +168,19 @@ function getLvIcon(level: number, isSigma: boolean = false): string {
 
 function handleClickChannel() {
   if (settings.value.topBarLinkOpenMode === 'newTab') {
-    window.open(`https://space.bilibili.com/${mid.value}`, '_blank')
+    window.open(`https://www.youtube.com/feed/you`, '_blank')
   }
   else if (settings.value.topBarLinkOpenMode === 'currentTabIfNotHomepage') {
     if (isHomePage())
-      window.open(`https://space.bilibili.com/${mid.value}`, '_blank')
+      window.open(`https://www.youtube.com/feed/you`, '_blank')
     else
-      window.open(`https://space.bilibili.com/${mid.value}`, '_self')
+      window.open(`https://www.youtube.com/feed/you`, '_self')
   }
   else if (settings.value.topBarLinkOpenMode === 'currentTabIfHomepage') {
-    window.open(`https://space.bilibili.com/${mid.value}`, isActualHomepage() ? '_self' : '_blank')
+    window.open(`https://www.youtube.com/feed/you`, isActualHomepage() ? '_self' : '_blank')
   }
   else {
-    window.open(`https://space.bilibili.com/${mid.value}`, '_self')
+    window.open(`https://www.youtube.com/feed/you`, '_self')
   }
 }
 </script>
@@ -220,7 +216,7 @@ function handleClickChannel() {
     >
       <ALink
         class="group"
-        href="https://account.bilibili.com/account/coin"
+        href="https://www.youtube.com/paid_memberships"
         type="topBar"
         p="x-4 y-1"
         rounded="$bew-menu-item-radius"
@@ -231,7 +227,7 @@ function handleClickChannel() {
       </ALink>
       <ALink
         class="group"
-        href="https://pay.bilibili.com/pay-v2-web/bcoin_index"
+        href="https://www.youtube.com/paid_memberships"
         type="topBar"
         p="x-4 y-1"
         rounded="$bew-menu-item-radius"
@@ -246,7 +242,7 @@ function handleClickChannel() {
 
     <ALink
       v-if="!showLv6LastLoginInfo"
-      href="//account.bilibili.com/account/record?type=exp"
+      href="https://www.youtube.com/account"
       type="topBar"
       class="bew-content-card"
       block w-full p-2
@@ -302,7 +298,7 @@ function handleClickChannel() {
 
     <ALink
       v-else
-      href="//account.bilibili.com/account/record?type=exp"
+      href="https://www.youtube.com/account"
       type="topBar"
       duration-200
       flex="~ items-center gap-2"
@@ -327,7 +323,7 @@ function handleClickChannel() {
     <div grid="~ cols-3 gap-2" px-4 pt-1 mt-1 border-t="1 $bew-border-color">
       <ALink
         class="channel-info-item"
-        :href="`https://space.bilibili.com/${mid}/fans/follow`"
+        href="https://www.youtube.com/feed/channels"
         :title="`${userStat.following}`"
         type="topBar"
       >
@@ -338,7 +334,7 @@ function handleClickChannel() {
       </ALink>
       <ALink
         class="channel-info-item"
-        :href="`https://space.bilibili.com/${mid}/fans/fans`"
+        href="https://www.youtube.com/feed/channels"
         :title="`${userStat.follower}`"
         type="topBar"
       >
@@ -349,7 +345,7 @@ function handleClickChannel() {
       </ALink>
       <ALink
         class="channel-info-item"
-        :href="`https://space.bilibili.com/${mid}/dynamic`"
+        href="https://www.youtube.com/feed/subscriptions"
         :title="`${userStat.dynamic_count}`"
         type="topBar"
       >

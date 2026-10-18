@@ -1,11 +1,19 @@
+import { createApp } from 'vue'
+
 import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
+import { BEWLY_MOUNTED } from '~/constants/globalEvents'
+import { i18n } from '~/utils/i18n'
 import { markContentScriptHealthy } from '~/utils/refreshPrompt'
+import type { FeedParseResult } from '~/youtube/feed'
 
 import { version } from '../../package.json'
+import { readHomeFeed } from './feedBridge'
+import { setHomeGridHidden } from './homeVisibility'
 import type { PageIdentity } from './pageIdentity'
 import { readPageIdentity } from './pageIdentity'
 import type { PageLoadingGuard } from './pageLoading'
 import { BEWLY_HOST_ID, clearStaleCustomView } from './pageSurface'
+import App from './views/App.vue'
 
 const contentScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
@@ -28,16 +36,78 @@ function releaseExtensionSurface() {
   clearStaleCustomView(document)
 }
 
+const bundledStyleText = (globalThis as { __BEWLYCAT_BUNDLED_STYLE_TEXT__?: string }).__BEWLYCAT_BUNDLED_STYLE_TEXT__ ?? ''
+
+function mountHome(initial: FeedParseResult) {
+  const container = document.createElement('div')
+  container.id = BEWLY_HOST_ID
+  Object.assign(container.style, {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '2147483646',
+  })
+  const shadow = container.attachShadow({ mode: 'open' })
+  const style = document.createElement('style')
+  style.textContent = bundledStyleText
+  const root = document.createElement('div')
+  root.style.height = '100%'
+  shadow.append(style, root)
+  ;(document.body ?? document.documentElement).append(container)
+  const app = createApp(App, { initial })
+  app.use(i18n)
+  app.mount(root)
+  Reflect.set(container, '__bewlyCatDisposeApp__', () => {
+    app.unmount()
+  })
+  window.dispatchEvent(new CustomEvent(BEWLY_MOUNTED))
+}
+
+let homeGeneration = 0
+let mountedHref: string | undefined
+
+async function openHome(href: string) {
+  const generation = ++homeGeneration
+  const body = await readHomeFeed()
+  if (generation !== homeGeneration || readPageIdentity(location.href).kind !== 'home')
+    return
+  if (body.kind !== 'parsed' || body.result.kind !== 'page') {
+    releaseExtensionSurface()
+    contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.release()
+    return
+  }
+  try {
+    releaseExtensionSurface()
+    setHomeGridHidden(true)
+    mountHome(body.result)
+    mountedHref = href
+  }
+  catch (error) {
+    releaseExtensionSurface()
+    contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.release()
+    console.error('[BewlyCat] 首页挂载失败:', error)
+  }
+}
+
 /**
- * 自定义视图要等 home 或 search 的信息流解析成功。
- * 这一阶段没有解析器，所以任何页面都不挂 #bewly，也不隐藏原站。
+ * 自定义视图只在首页且解析成功后挂上。搜索页留到下一阶段。
+ * 离开首页立即卸掉宿主并撤销隐藏。
  */
-function reconcile(page: PageIdentity) {
+function reconcile(page: PageIdentity, href: string) {
+  if (page.kind === 'home' && mountedHref === href && document.getElementById(BEWLY_HOST_ID))
+    return
+
+  homeGeneration++
+  mountedHref = undefined
+  releaseExtensionSurface()
+  setHomeGridHidden(false)
+
   switch (page.kind) {
     case 'home':
+      void openHome(href)
+      return
     case 'search':
     case 'passthrough':
-      releaseExtensionSurface()
+      contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.release()
       return
     default: {
       const _exhaustive: never = page
@@ -66,7 +136,7 @@ let currentPage: PageIdentity = readPageIdentity(location.href)
 
 function applyUrl(value: string) {
   currentPage = readPageIdentity(value)
-  reconcile(currentPage)
+  reconcile(currentPage, value)
 }
 
 function onNavigate(event: Event) {
@@ -118,7 +188,6 @@ if (!contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__) {
 
   try {
     applyUrl(location.href)
-    contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.release()
   }
   catch (error) {
     releaseExtensionSurface()

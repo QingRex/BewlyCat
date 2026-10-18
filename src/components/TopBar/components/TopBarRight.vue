@@ -13,14 +13,11 @@ import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumb
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { MESSAGE_URL } from '../constants/urls'
 import AddOpenTabsDialog from './AddOpenTabsDialog.vue'
-import FavoritesPop from './pops/FavoritesPop.vue'
-import HistoryPop from './pops/HistoryPop.vue'
 import MomentsPop from './pops/MomentsPop.vue'
 import MorePop from './pops/MorePop.vue'
 import NotificationsPop from './pops/NotificationsPop.vue'
 import UploadPop from './pops/UploadPop.vue'
 import UserPanelPop from './pops/UserPanelPop.vue'
-import WatchLaterPop from './pops/WatchLaterPop.vue'
 import TopBarItemEditor from './TopBarItemEditor.vue'
 import TopBarModeSwitcher from './TopBarModeSwitcher.vue'
 
@@ -29,11 +26,6 @@ const emit = defineEmits(['notificationsClick'])
 const topBarStore = useTopBarStore()
 const showAddOpenTabsDialog = ref(false)
 
-function openAddOpenTabsDialog() {
-  showAddOpenTabsDialog.value = true
-  topBarStore.closeAllPopups()
-}
-
 // 使用 store 中的必要状态
 const {
   isLogin,
@@ -41,7 +33,6 @@ const {
   unReadMessage,
   unReadDm,
   newMomentsCount,
-  watchLaterCount,
   drawerVisible,
   popupVisible,
   unReadMessageCount,
@@ -122,9 +113,6 @@ watch(
 // reactive in the template, so an item hidden at first render must still have
 // a handler when it is enabled from the layout editor later.
 const moments = setupTopBarItemHoverEvent('moments')
-const favorites = setupTopBarItemHoverEvent('favorites')
-const history = setupTopBarItemHoverEvent('history')
-const watchLater = setupTopBarItemHoverEvent('watchLater')
 const upload = setupTopBarItemHoverEvent('upload')
 const notifications = setupTopBarItemHoverEvent('notifications')
 const more = setupTopBarItemHoverEvent('more')
@@ -355,123 +343,6 @@ const shouldShowDivider = computed(() => {
             </TopBarItemEditor>
           </div>
 
-          <!-- Favorites -->
-          <div
-            v-if="isLayoutEditing || isComponentVisible('favorites')"
-            ref="favorites"
-            class="right-side-item"
-            :class="{ active: popupVisible?.favorites }"
-            @click="(event: MouseEvent) => handleTopBarItemClick(event, 'favorites')"
-          >
-            <TopBarItemEditor
-              component-key="favorites"
-              :title="$t('topbar.favorites')"
-            >
-              <ALink
-                :class="{ 'white-icon': forceWhiteIcon }"
-                :href="getTopBarItemHref('favorites', `https://space.bilibili.com/${mid}/favlist`)"
-                :title="$t('topbar.favorites')"
-                type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
-                @click="(event: MouseEvent) => handleTopBarItemClick(event, 'favorites')"
-              >
-                <div i-mingcute:star-line />
-              </ALink>
-
-              <Transition name="slide-in">
-                <KeepAlive>
-                  <FavoritesPop
-                    v-if="!isLayoutEditing && popupVisible?.favorites"
-                    ref="favoritesPopRef"
-                    class="bew-popover"
-                    @click.stop="() => {}"
-                  />
-                </KeepAlive>
-              </Transition>
-            </TopBarItemEditor>
-          </div>
-
-          <!-- History -->
-          <div
-            v-if="isLayoutEditing || isComponentVisible('history')"
-            ref="history"
-            class="right-side-item"
-            :class="{ active: popupVisible?.history }"
-            @click="(event: MouseEvent) => handleTopBarItemClick(event, 'history')"
-          >
-            <TopBarItemEditor
-              component-key="history"
-              :title="$t('topbar.history')"
-            >
-              <ALink
-                :class="{ 'white-icon': forceWhiteIcon }"
-                :href="getTopBarItemHref('history', 'https://www.bilibili.com/history')"
-                :title="$t('topbar.history')"
-                type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
-                @click="(event: MouseEvent) => handleTopBarItemClick(event, 'history')"
-              >
-                <div i-mingcute:time-line />
-              </ALink>
-
-              <Transition name="slide-in">
-                <HistoryPop
-                  v-if="!isLayoutEditing && popupVisible?.history"
-                  ref="historyPopRef"
-                  class="bew-popover"
-                  @click.stop="() => {}"
-                />
-              </Transition>
-            </TopBarItemEditor>
-          </div>
-
-          <!-- Watch later -->
-          <div
-            v-if="isLayoutEditing || isComponentVisible('watchLater')"
-            ref="watchLater"
-            class="right-side-item"
-            :class="{ active: popupVisible?.watchLater }"
-            @click="(event: MouseEvent) => handleTopBarItemClick(event, 'watchLater')"
-          >
-            <TopBarItemEditor
-              component-key="watchLater"
-              :title="$t('topbar.watch_later')"
-            >
-              <template v-if="watchLaterCount > 0 && shouldShowBadge('watchLater')">
-                <div
-                  v-if="shouldShowNumberBadge('watchLater')"
-                  class="unread-num-dot"
-                >
-                  {{ watchLaterCount > 99 ? '99+' : watchLaterCount }}
-                </div>
-                <div
-                  v-else-if="shouldShowDotBadge('watchLater')"
-                  class="unread-dot"
-                />
-              </template>
-              <ALink
-                :class="{ 'white-icon': forceWhiteIcon }"
-                :href="getTopBarItemHref('watchLater', 'https://www.bilibili.com/watchlater/list')"
-                :title="$t('topbar.watch_later')"
-                type="topBar"
-                :custom-click-event="isLayoutEditing || (!settings.touchScreenOptimization && settings.openTopBarItemsInBewly)"
-                @click="(event: MouseEvent) => handleTopBarItemClick(event, 'watchLater')"
-              >
-                <div i-mingcute:carplay-line />
-              </ALink>
-
-              <Transition name="slide-in">
-                <WatchLaterPop
-                  v-if="!isLayoutEditing && popupVisible?.watchLater"
-                  ref="watchLaterPopRef"
-                  class="bew-popover"
-                  @add-open-tabs="openAddOpenTabsDialog"
-                  @click.stop="() => {}"
-                />
-              </Transition>
-            </TopBarItemEditor>
-          </div>
-
           <!-- Creative center -->
           <div
             v-if="isLayoutEditing || isComponentVisible('creatorCenter')"
@@ -484,7 +355,7 @@ const shouldShowDivider = computed(() => {
             >
               <a
                 :class="{ 'white-icon': forceWhiteIcon }"
-                href="https://member.bilibili.com/platform/home"
+                href="https://studio.youtube.com"
                 target="_blank"
                 :title="$t('topbar.creative_center')"
                 @click="(event: MouseEvent) => handleTopBarItemClick(event, 'creatorCenter')"

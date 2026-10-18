@@ -1907,3 +1907,18 @@ inject:
   load_more: Load more
   expand_all_replies: Load all
   load_reply_pages: 'Load {count} pages'
+youtube_home:
+  title: YouTube
+  search_placeholder: Search
+  search_submit: Search
+  empty: No videos on this page
+  error: Couldn't load more
+  retry: Retry
+  settings: Settings
+  theme: Theme
+  theme_auto: System
+  theme_light: Light
+  theme_dark: Dark
+  wallpaper: Wallpaper URL
+  grid_density: Grid density
+  close: Done

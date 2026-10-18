@@ -36,7 +36,9 @@ function isTopBarPopupKey(key: string, popupVisible: ReturnType<typeof useTopBar
 }
 
 function getConfiguredPageUrl(page: AppPage): string {
-  return `https://www.bilibili.com/?page=${page}`
+  if (page === AppPage.Search)
+    return 'https://www.youtube.com/results'
+  return 'https://www.youtube.com/'
 }
 
 export function useTopBarInteraction() {

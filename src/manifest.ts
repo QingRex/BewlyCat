@@ -51,6 +51,13 @@ export async function getManifest() {
         run_at: 'document_start',
         all_frames: false,
       },
+      {
+        matches: [...CONTENT_SCRIPT_MATCHES],
+        js: ['./dist/contentScripts/inject.global.js'],
+        run_at: 'document_start',
+        all_frames: false,
+        world: 'MAIN',
+      },
     ],
     web_accessible_resources: [
       {

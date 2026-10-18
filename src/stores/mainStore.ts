@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
-import { getUserID } from '~/utils/main'
 
 export interface DockItem {
   i18nKey: string
@@ -30,7 +29,7 @@ export const useMainStore = defineStore('main', () => {
         page: AppPage.Home,
         openInNewTab: false,
         useOriginalBiliPage: false,
-        url: 'https://www.bilibili.com',
+        url: 'https://www.youtube.com/',
         hasBewlyPage: true,
       },
       {
@@ -40,58 +39,8 @@ export const useMainStore = defineStore('main', () => {
         page: AppPage.Search,
         openInNewTab: false,
         useOriginalBiliPage: false,
-        url: 'https://search.bilibili.com/all',
-        hasBewlyPage: true,
-      },
-      {
-        i18nKey: 'dock.anime',
-        icon: 'i-mingcute:tv-2-line',
-        iconActivated: 'i-mingcute:tv-2-fill',
-        page: AppPage.Anime,
-        openInNewTab: false,
-        useOriginalBiliPage: false,
-        url: 'https://www.bilibili.com/anime',
-        hasBewlyPage: true,
-      },
-      {
-        i18nKey: 'dock.favorites',
-        icon: 'i-mingcute:star-line',
-        iconActivated: 'i-mingcute:star-fill',
-        page: AppPage.Favorites,
-        openInNewTab: false,
-        useOriginalBiliPage: false,
-        url: `https://space.bilibili.com/${getUserID()}/favlist`,
-        hasBewlyPage: true,
-      },
-      {
-        i18nKey: 'dock.history',
-        icon: 'i-mingcute:time-line',
-        iconActivated: 'i-mingcute:time-fill',
-        page: AppPage.History,
-        openInNewTab: false,
-        useOriginalBiliPage: false,
-        url: `https://www.bilibili.com/history`,
-        hasBewlyPage: true,
-      },
-      {
-        i18nKey: 'dock.watch_later',
-        icon: 'i-mingcute:carplay-line',
-        iconActivated: 'i-mingcute:carplay-fill',
-        page: AppPage.WatchLater,
-        openInNewTab: false,
-        useOriginalBiliPage: false,
-        url: `https://www.bilibili.com/watchlater/list`,
-        hasBewlyPage: true,
-      },
-      {
-        i18nKey: 'dock.moments',
-        icon: 'i-tabler:windmill',
-        iconActivated: 'i-tabler:windmill-filled',
-        page: AppPage.Moments,
-        openInNewTab: false,
-        useOriginalBiliPage: true,
-        url: `https://t.bilibili.com`,
-        hasBewlyPage: true,
+        url: 'https://www.youtube.com/results',
+        hasBewlyPage: false,
       },
     ]
   })

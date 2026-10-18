@@ -2,7 +2,17 @@ import { computed, shallowRef } from 'vue'
 
 import { settings } from '~/logic'
 
-import { allChannelConfigs } from '../constants/channels'
+export interface TopBarChannelConfig {
+  key: string
+  nameKey: string
+  icon: string
+  href: string
+  color?: string
+}
+
+export const genreChannelConfigs: TopBarChannelConfig[] = []
+export const otherChannelConfigs: TopBarChannelConfig[] = []
+export const allChannelConfigs: TopBarChannelConfig[] = []
 
 const knownKeys = new Set(allChannelConfigs.map(channel => channel.key))
 

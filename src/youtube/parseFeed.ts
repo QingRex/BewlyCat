@@ -321,3 +321,101 @@ export function parseFeed(input: unknown): FeedParseResult {
 
   return { kind: 'page', cards: sink.cards }
 }
+
+function parseContinuation(value: unknown): ContinuationRequest | undefined {
+  const record = asRecord(value)
+  if (!record)
+    return undefined
+  if (typeof record.target !== 'string' || record.target.trim() === '')
+    return undefined
+  if (typeof record.token !== 'string' || record.token.trim() === '')
+    return undefined
+  return { target: record.target.trim(), token: record.token.trim() }
+}
+
+function parseCard(value: unknown): FeedCard | undefined {
+  const record = asRecord(value)
+  if (!record)
+    return undefined
+
+  if (record.kind === 'video') {
+    const channel = asRecord(record.channel)
+    if (typeof record.videoId !== 'string' || record.videoId.trim() === '')
+      return undefined
+    if (typeof record.title !== 'string' || record.title.trim() === '')
+      return undefined
+    if (typeof record.thumbnailUrl !== 'string' || record.thumbnailUrl.trim() === '')
+      return undefined
+    if (!channel || typeof channel.channelId !== 'string' || channel.channelId.trim() === '')
+      return undefined
+    if (typeof channel.name !== 'string' || channel.name.trim() === '')
+      return undefined
+    const card: VideoCard = {
+      kind: 'video',
+      videoId: videoId(record.videoId.trim()),
+      title: record.title.trim(),
+      thumbnailUrl: record.thumbnailUrl.trim(),
+      channel: { channelId: channelId(channel.channelId.trim()), name: channel.name.trim() },
+    }
+    if (typeof record.durationText === 'string' && record.durationText.trim() !== '')
+      card.durationText = record.durationText.trim()
+    if (typeof record.viewCountText === 'string' && record.viewCountText.trim() !== '')
+      card.viewCountText = record.viewCountText.trim()
+    return card
+  }
+
+  if (record.kind === 'channel') {
+    if (typeof record.channelId !== 'string' || record.channelId.trim() === '')
+      return undefined
+    if (typeof record.name !== 'string' || record.name.trim() === '')
+      return undefined
+    return {
+      kind: 'channel',
+      channelId: channelId(record.channelId.trim()),
+      name: record.name.trim(),
+    }
+  }
+
+  if (record.kind === 'playlist') {
+    if (typeof record.playlistId !== 'string' || record.playlistId.trim() === '')
+      return undefined
+    if (typeof record.title !== 'string' || record.title.trim() === '')
+      return undefined
+    return {
+      kind: 'playlist',
+      playlistId: playlistId(record.playlistId.trim()),
+      title: record.title.trim(),
+    }
+  }
+
+  return undefined
+}
+
+/** 隔离世界收到的消息在使用前再解析一次，不信任原始对象。 */
+export function parseFeedResult(value: unknown): FeedParseResult | undefined {
+  const record = asRecord(value)
+  if (!record)
+    return undefined
+  if (record.kind === 'not-feed')
+    return { kind: 'not-feed' }
+  if (record.kind === 'items-discarded')
+    return { kind: 'items-discarded' }
+  if (record.kind !== 'page' || !Array.isArray(record.cards))
+    return undefined
+
+  const cards: FeedCard[] = []
+  for (const item of record.cards) {
+    const card = parseCard(item)
+    if (!card)
+      return undefined
+    cards.push(card)
+  }
+
+  if (record.continuation === undefined)
+    return { kind: 'page', cards }
+
+  const continuation = parseContinuation(record.continuation)
+  if (!continuation)
+    return undefined
+  return { kind: 'page', cards, continuation }
+}

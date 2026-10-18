@@ -10,9 +10,8 @@ import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isComponentVisible } from '~/utils/topBarBadge'
 
-import { getPinnedVisibleCount, pinnedChannelLayout, validPinnedChannelKeys } from '../composables/usePinnedChannels'
+import { allChannelConfigs, getPinnedVisibleCount, pinnedChannelLayout, validPinnedChannelKeys } from '../composables/usePinnedChannels'
 import { useTopBarPanel } from '../composables/useTopBarPanel'
-import { allChannelConfigs } from '../constants/channels'
 import ChannelIcon from './ChannelIcon.vue'
 import TopBarItemEditor from './TopBarItemEditor.vue'
 

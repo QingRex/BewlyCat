@@ -7,6 +7,7 @@ import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { originalSettings, settings, videoCardContextMenuKeys } from '~/logic'
+import { readSettingsDocument, SETTINGS_DOCUMENT_VERSION, writeSettingsDocument } from '~/logic/settingsDocument'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -201,6 +202,13 @@ function handleImportFile(event: Event) {
       if (!importedSettings || Array.isArray(importedSettings) || typeof importedSettings !== 'object')
         throw new TypeError('Invalid settings backup')
 
+      const currentSettings = originalSettings as unknown as Record<string, unknown>
+      if (importedSettings.version !== SETTINGS_DOCUMENT_VERSION) {
+        await importSettingsStorage(readSettingsDocument(importedSettings, currentSettings))
+        toast.warning(t('settings.maintenance.import_no_matches'))
+        return
+      }
+
       if (hasPendingSettingsMigrations(importedSettings)) {
         const message = formatSettingsMigrationConfirmMessage(
           importedSettings,
@@ -226,7 +234,6 @@ function handleImportFile(event: Event) {
         }
       }
 
-      const currentSettings = originalSettings as unknown as Record<string, unknown>
       const recognizedSettings: Record<string, unknown> = {}
       let importedCount = 0
       let ignoredCount = 0
@@ -251,7 +258,7 @@ function handleImportFile(event: Event) {
         return
       }
 
-      await importSettingsStorage(recognizedSettings)
+      await importSettingsStorage(writeSettingsDocument(settings.value, { set: recognizedSettings }, currentSettings))
 
       toast.success(t('settings.maintenance.import_success', {
         imported: importedCount,

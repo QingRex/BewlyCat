@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { genreChannelConfigs, otherChannelConfigs } from '../../constants/channels'
+import { genreChannelConfigs, otherChannelConfigs } from '../../composables/usePinnedChannels'
 
 const { t } = useI18n()
 

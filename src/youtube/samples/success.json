@@ -1,0 +1,102 @@
+{
+  "contents": {
+    "twoColumnBrowseResultsRenderer": {
+      "tabs": [
+        {
+          "tabRenderer": {
+            "content": {
+              "richGridRenderer": {
+                "contents": [
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "videoRenderer": {
+                          "videoId": "dQw4w9WgXcQ",
+                          "title": { "runs": [{ "text": "Sample video" }] },
+                          "ownerText": {
+                            "runs": [
+                              {
+                                "text": "Sample channel",
+                                "navigationEndpoint": {
+                                  "browseEndpoint": { "browseId": "UC1234567890" }
+                                }
+                              }
+                            ]
+                          },
+                          "thumbnail": {
+                            "thumbnails": [
+                              { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480 }
+                            ]
+                          },
+                          "lengthText": { "simpleText": "3:33" },
+                          "viewCountText": { "simpleText": "1,234 views" }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "videoRenderer": {
+                          "videoId": "abcdefghijk",
+                          "title": { "simpleText": "No stats" },
+                          "shortBylineText": {
+                            "runs": [
+                              {
+                                "text": "Other channel",
+                                "navigationEndpoint": {
+                                  "browseEndpoint": { "browseId": "UCother" }
+                                }
+                              }
+                            ]
+                          },
+                          "thumbnail": {
+                            "thumbnails": [
+                              { "url": "https://i.ytimg.com/vi/abcdefghijk/default.jpg" }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "channelRenderer": {
+                          "channelId": "UCchannelonly",
+                          "title": { "simpleText": "A channel" }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "playlistRenderer": {
+                          "playlistId": "PLsample",
+                          "title": { "simpleText": "A playlist" }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "continuationItemRenderer": {
+                      "continuationEndpoint": {
+                        "commandMetadata": {
+                          "webCommandMetadata": {
+                            "apiUrl": "/youtubei/v1/browse?prettyPrint=false"
+                          }
+                        },
+                        "continuationCommand": { "token": "opaque-token" }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

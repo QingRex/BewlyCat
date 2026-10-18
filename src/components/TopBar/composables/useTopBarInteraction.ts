@@ -36,7 +36,9 @@ function isTopBarPopupKey(key: string, popupVisible: ReturnType<typeof useTopBar
 }
 
 function getConfiguredPageUrl(page: AppPage): string {
-  return `https://www.bilibili.com/?page=${page}`
+  if (page === AppPage.Search)
+    return 'https://www.youtube.com/results'
+  return 'https://www.youtube.com/'
 }
 
 export function useTopBarInteraction() {
@@ -77,8 +79,7 @@ export function useTopBarInteraction() {
     if (!settings.value)
       return false
 
-    return (isHomePage() && settings.value.useOriginalBilibiliHomepage)
-      || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
+    return (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
       || SPACE_URL.test(location.href)
       || ACCOUNT_URL.test(location.href)
   })
@@ -156,8 +157,6 @@ export function useTopBarInteraction() {
 
   const showSearchBar = computed((): boolean => {
     if (isHomePage()) {
-      if (settings.value.useOriginalBilibiliHomepage)
-        return true
       if (!activatedPage?.value)
         return true
       // Search 页面的显示逻辑：不显示顶栏搜索框（因为页面中已有搜索框）

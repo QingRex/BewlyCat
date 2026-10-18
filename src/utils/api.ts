@@ -1,35 +1,8 @@
 import type { API_COLLECTION } from '~/background/messageListeners/api'
-import { isSearchResultApiMethod } from '~/constants/searchApi'
-import { settings } from '~/logic'
 import { sendAbortableApiMessage, sendMessage } from '~/utils/messaging'
 
 export interface ApiRequestOptions {
   signal?: AbortSignal
-}
-
-const SEARCH_QUERY_ID_CHARACTERS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const searchQueryIds = new Map<string, string>()
-
-function createSearchQueryId(): string {
-  return Array.from({ length: 32 }, () => {
-    const index = Math.floor(Math.random() * SEARCH_QUERY_ID_CHARACTERS.length)
-    return SEARCH_QUERY_ID_CHARACTERS[index]
-  }).join('')
-}
-
-function getSearchQueryId(method: string, options?: object): string {
-  const keyword = String((options as Record<string, unknown> | undefined)?.keyword ?? '')
-  const cacheKey = `${method}:${keyword}`
-  const cached = searchQueryIds.get(cacheKey)
-  if (cached)
-    return cached
-
-  if (searchQueryIds.size >= 100)
-    searchQueryIds.clear()
-
-  const id = createSearchQueryId()
-  searchQueryIds.set(cacheKey, id)
-  return id
 }
 
 type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
@@ -43,56 +16,38 @@ type APIFunction<T = typeof API_COLLECTION> = {
   }
 }
 
-// eslint-disable-next-line ts/no-unsafe-declaration-merging
-export interface APIClient extends APIFunction<typeof API_COLLECTION> {
-
+export type APIClient = APIFunction<typeof API_COLLECTION> & {
+  [namespace: string]: Record<string, (options?: object, request?: ApiRequestOptions) => Promise<any>>
 }
 
-// eslint-disable-next-line ts/no-unsafe-declaration-merging
-export class APIClient {
-  private readonly cache = new Map<string | symbol, any>()
+function createAPIClient(): APIClient {
+  const cache = new Map<string | symbol, APIClient[string]>()
+  const client: APIClient = new Proxy({}, {
+    get: (_, namespace) => {
+      if (cache.has(namespace))
+        return cache.get(namespace)
 
-  constructor() {
-    // @ts-expect-error ignore
-    return new Proxy({}, {
-      get: (_, namespace) => { // namespace
-        if (this.cache.has(namespace)) {
-          return this.cache.get(namespace)
-        }
-        else {
-          const api = new Proxy({}, {
-            get(_, p) {
-              return (options?: object, request?: ApiRequestOptions) => {
-                const isSearchResultRequest = namespace === 'search'
-                  && typeof p === 'string'
-                  && isSearchResultApiMethod(p)
-                const requestOptions = isSearchResultRequest
-                  ? { qv_id: getSearchQueryId(p, options), ...options }
-                  : options
+      const api = new Proxy({}, {
+        get(_, p) {
+          return (options?: object, request?: ApiRequestOptions) => {
+            const message: Record<string, any> = {
+              contentScriptQuery: p as string,
+              ...options,
+            }
 
-                const message: Record<string, any> = {
-                  contentScriptQuery: p as string,
-                  ...requestOptions,
-                }
-
-                // 去个性化搜索仍经后台获取匿名 WBI key 并签名，只省略 Cookie。
-                if (isSearchResultRequest && settings.value.depersonalizeSearchResults)
-                  message.bewlyNoCookie = true
-
-                return request?.signal
-                  ? sendAbortableApiMessage(p as string, message, request.signal)
-                  : sendMessage(p as string, message)
-              }
-            },
-          })
-          this.cache.set(namespace, api)
-          return api
-        }
-      },
-    })
-  }
+            return request?.signal
+              ? sendAbortableApiMessage(p as string, message, request.signal)
+              : sendMessage(p as string, message)
+          }
+        },
+      })
+      cache.set(namespace, api)
+      return api
+    },
+  }) as APIClient
+  return client
 }
 
-const api = new APIClient()
+const api = createAPIClient()
 
 export default api

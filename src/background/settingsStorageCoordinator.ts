@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
 
+import { SETTINGS_DOCUMENT_VERSION } from '~/logic/settingsDocument'
 import { onMessage } from '~/utils/messaging'
 import type { SettingsCloudSyncEntry, SettingsCloudSyncMode, SettingsCloudSyncVersion } from '~/utils/settingsCloudSyncProtocol'
 import {
@@ -34,6 +35,13 @@ export interface SettingsCloudSyncReconcileResult {
 
 let initialized = false
 let writeQueue: Promise<void> = Promise.resolve()
+
+function acceptSettingsSnapshot(value: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...value }
+  Reflect.deleteProperty(next, 'useOriginalBilibiliHomepage')
+  next.version = SETTINGS_DOCUMENT_VERSION
+  return next
+}
 
 function createStorageId() {
   if (typeof crypto.randomUUID === 'function')
@@ -128,10 +136,7 @@ async function importSettings(value: unknown): Promise<SettingsStoragePatchRespo
   ])
   const currentValue = parseStoredSettings(stored[SETTINGS_STORAGE_KEY])
   const { meta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
-  const nextValue = {
-    ...currentValue,
-    ...request.settings,
-  }
+  const nextValue = acceptSettingsSnapshot(request.settings)
   const serializedValue = JSON.stringify(nextValue)
   const actualPatch = createTopLevelSettingsStoragePatch(currentValue, nextValue)
   const settingsChanged = !isSettingsStoragePatchEmpty(actualPatch)
@@ -205,7 +210,12 @@ async function applyPatch(value: unknown): Promise<SettingsStoragePatchResponse>
     }
   }
 
-  const nextValue = applySettingsStoragePatch(currentValue, request.patch)
+  const nextValue = request.document
+    ? acceptSettingsSnapshot(request.document)
+    : acceptSettingsSnapshot(applySettingsStoragePatch(
+        currentValue.version === SETTINGS_DOCUMENT_VERSION ? currentValue : {},
+        request.patch,
+      ))
   const serializedValue = JSON.stringify(nextValue)
   const actualPatch = createTopLevelSettingsStoragePatch(currentValue, nextValue)
   const settingsChanged = !isSettingsStoragePatchEmpty(actualPatch)

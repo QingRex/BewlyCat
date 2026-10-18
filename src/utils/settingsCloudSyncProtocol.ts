@@ -42,7 +42,7 @@ export interface SettingsCloudSyncEntry {
   version: SettingsCloudSyncVersion
 }
 
-const BLOCKED_FIELDS = new Set(['__proto__', 'constructor', 'prototype'])
+const BLOCKED_FIELDS = new Set(['__proto__', 'constructor', 'prototype', 'useOriginalBilibiliHomepage'])
 
 // Wallpaper data and its rendering configuration stay device-local. Uploaded
 // files and caches already use separate local-only storage keys.

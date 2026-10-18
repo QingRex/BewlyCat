@@ -1,6 +1,6 @@
 import { IFRAME_SEARCH_NAVIGATION } from '~/constants/globalEvents'
 import { settings } from '~/logic'
-import { isActualHomepage, isHomePage, isInIframe } from '~/utils/main'
+import { isActualHomepage, isInIframe } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
@@ -17,7 +17,6 @@ const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
 
 export function shouldUsePluginSearchResultsPage(): boolean {
   return settings.value.usePluginSearchResultsPage
-    && !settings.value.useOriginalBilibiliHomepage
 }
 
 /**
@@ -41,23 +40,8 @@ export function buildNativeSearchUrl(keyword: string): string {
  * 开启插件搜索页时跳扩展内搜索页，否则跳 B 站原生搜索页
  */
 export function buildKeywordSearchUrl(keyword: string): string {
-  const encoded = encodeURIComponent(keyword)
-
-  if (shouldUsePluginSearchResultsPage())
-    return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
-
-  return buildNativeSearchUrl(keyword)
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword.trim())}`
 }
-
-const PLUGIN_SEARCH_RESET_PARAMS = [
-  'category',
-  'pn',
-  'user_order',
-  'user_type',
-  'search_type',
-  'live_room_order',
-  'live_user_order',
-] as const
 
 /**
  * 开启插件搜索结果页时，在当前插件首页就地切到搜索结果，
@@ -71,27 +55,14 @@ export function navigateToPluginSearchResults(keyword: string): boolean {
   if (!normalized)
     return false
 
-  const targetUrl = `https://www.bilibili.com/?page=SearchResults&keyword=${encodeURIComponent(normalized)}`
+  const targetUrl = buildKeywordSearchUrl(normalized)
 
   if (isInIframe()) {
-    // 抽屉的 sandbox 禁止直接导航顶层窗口，由持有 iframe 的父页面处理。
     window.parent.postMessage({ type: IFRAME_SEARCH_NAVIGATION, keyword: normalized }, '*')
     return true
   }
 
-  if (!isHomePage()) {
-    window.location.assign(targetUrl)
-    return true
-  }
-
-  const params = new URLSearchParams(window.location.search)
-  params.set('page', 'SearchResults')
-  params.set('keyword', normalized)
-  for (const key of PLUGIN_SEARCH_RESET_PARAMS)
-    params.delete(key)
-
-  window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`)
-  window.dispatchEvent(new Event('pushstate'))
+  window.location.assign(targetUrl)
   return true
 }
 

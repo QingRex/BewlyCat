@@ -7,27 +7,27 @@ const list = computed(() => {
   return [
     {
       name: t('topbar.upload_dropdown.article'),
-      url: 'https://member.bilibili.com/platform/upload/text/apply',
+      url: 'https://www.youtube.com/upload',
       icon: 'i-solar:document-add-bold-duotone',
     },
     {
       name: t('topbar.upload_dropdown.music'),
-      url: 'https://member.bilibili.com/platform/upload/audio/frame',
+      url: 'https://www.youtube.com/upload',
       icon: 'i-solar:music-notes-bold-duotone',
     },
     {
       name: t('topbar.upload_dropdown.sticker'),
-      url: 'https://member.bilibili.com/platform/upload/sticker',
+      url: 'https://www.youtube.com/upload',
       icon: 'i-solar:sticker-smile-square-bold-duotone',
     },
     {
       name: t('topbar.upload_dropdown.video'),
-      url: 'https://member.bilibili.com/platform/upload/video/frame',
+      url: 'https://www.youtube.com/upload',
       icon: 'i-solar:video-frame-bold-duotone',
     },
     {
       name: t('topbar.upload_dropdown.manager'),
-      url: 'https://member.bilibili.com/platform/upload-manager/article',
+      url: 'https://studio.youtube.com',
       icon: 'i-solar:video-library-bold-duotone',
     },
   ]

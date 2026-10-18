@@ -6,9 +6,8 @@ import Draggable from 'vuedraggable'
 
 import Button from '~/components/Button.vue'
 import ChannelIcon from '~/components/TopBar/components/ChannelIcon.vue'
-import { pinnedChannelLayout, validPinnedChannelKeys } from '~/components/TopBar/composables/usePinnedChannels'
+import { allChannelConfigs, pinnedChannelLayout, validPinnedChannelKeys } from '~/components/TopBar/composables/usePinnedChannels'
 import { channelCategories } from '~/components/TopBar/constants/channelCategories'
-import { allChannelConfigs } from '~/components/TopBar/constants/channels'
 import { settings } from '~/logic'
 import { getComponentConfig, isComponentVisible } from '~/utils/topBarBadge'
 

@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
-import { settings } from '~/logic'
 import type {
   ImageLoadQueueCancelReason,
   ImageLoadQueueHandle,
@@ -354,8 +353,6 @@ function cleanupObservers() {
 function getObserverRoot(): Element | null {
   if (typeof window === 'undefined')
     return null
-  if (settings.value.useOriginalBilibiliHomepage)
-    return document.scrollingElement
   const viewport = bewlyApp?.scrollViewportRef?.value
   return viewport?.isConnected ? viewport : null
 }
@@ -823,7 +820,6 @@ watch(() => props.loading, (loading) => {
 watch(
   () => [
     bewlyApp?.scrollViewportRef?.value,
-    settings.value.useOriginalBilibiliHomepage,
     props.retainScreens,
     props.preloadScreens,
     props.rootMargin,

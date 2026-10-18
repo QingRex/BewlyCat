@@ -1,61 +1,46 @@
 import { BEWLY_MOUNTED } from '../constants/globalEvents'
-import { isInBilibiliLiveContext } from '../utils/bilibiliLive'
-import { stripBilibiliLocalePathname } from '../utils/bilibiliLocale'
+import { BEWLY_HOST_ID, clearStaleCustomView } from './pageSurface'
 
 export interface PageLoadingGuard {
-  revealHomepage: () => void
-  dispose: () => void
+  /** 未进入自定义视图，或挂载失败时，撤掉隐藏标记、扩展样式和半截宿主。 */
+  release: () => void
 }
 
-// 独立的小入口先于主包执行，不导入 Vue、设置或页面组件。
+const GUARD_TIMEOUT_MS = 8000
+
 const loadingGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_PAGE_LOADING__?: PageLoadingGuard
 }
 
-if (!/Electron/i.test(navigator.userAgent) && !loadingGlobal.__BEWLYCAT_PAGE_LOADING__ && !isInBilibiliLiveContext()) {
-  const isHomepage = window === window.top
-    && /^(?:www\.)?bilibili\.com$/.test(location.hostname)
-    && ['/', '/index.html'].includes(stripBilibiliLocalePathname(location.pathname))
-  const homepageStyle = document.createElement('style')
-  const headerStyle = document.createElement('style')
-  // 保留原站布局测量；设置读取完成后，原版首页立即恢复显示。
-  homepageStyle.textContent = isHomepage
-    ? 'html > body { opacity: 0 !important; pointer-events: none !important; transition: none !important; }'
-    : ''
-  headerStyle.textContent = '.bili-header, #biliMainHeader, .header-channel, .bili-header-channel-panel { visibility: hidden !important; }'
-
-  let disposed = false
-  let homepageRevealed = false
+if (!/Electron/i.test(navigator.userAgent) && !loadingGlobal.__BEWLYCAT_PAGE_LOADING__) {
+  let stopped = false
   let timeout: ReturnType<typeof setTimeout>
-  const observer = new MutationObserver(attachStyles)
-  function attachStyles() {
-    if (disposed || !document.documentElement)
+
+  function removeExtensionSurface() {
+    document.getElementById(BEWLY_HOST_ID)?.remove()
+    clearStaleCustomView(document)
+  }
+
+  function stop() {
+    if (stopped)
       return
-    if (!homepageRevealed)
-      document.documentElement.append(homepageStyle)
-    document.documentElement.append(headerStyle)
-    observer.disconnect()
-  }
-
-  function dispose() {
-    disposed = true
-    observer.disconnect()
-    homepageStyle.remove()
-    headerStyle.remove()
+    stopped = true
     clearTimeout(timeout)
-    window.removeEventListener(BEWLY_MOUNTED, dispose)
+    window.removeEventListener(BEWLY_MOUNTED, onReady)
   }
 
-  loadingGlobal.__BEWLYCAT_PAGE_LOADING__ = {
-    revealHomepage: () => {
-      homepageRevealed = true
-      homepageStyle.remove()
-    },
-    dispose,
+  function release() {
+    removeExtensionSurface()
+    stop()
   }
-  // 主包、设置读取或挂载失败时自动恢复原站，避免永久白屏。
-  timeout = setTimeout(dispose, 8000)
-  window.addEventListener(BEWLY_MOUNTED, dispose, { once: true })
-  observer.observe(document, { childList: true })
-  attachStyles()
+
+  function onReady() {
+    stop()
+  }
+
+  loadingGlobal.__BEWLYCAT_PAGE_LOADING__ = { release }
+
+  clearStaleCustomView(document)
+  timeout = setTimeout(release, GUARD_TIMEOUT_MS)
+  window.addEventListener(BEWLY_MOUNTED, onReady, { once: true })
 }

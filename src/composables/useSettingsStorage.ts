@@ -3,6 +3,7 @@ import { computed, getCurrentScope, isProxy, onScopeDispose, reactive, toRaw, to
 import browser from 'webextension-polyfill'
 
 import type { StorageRef } from '~/composables/useStorageLocal'
+import { readSettingsDocument } from '~/logic/settingsDocument'
 import { isBackgroundUnavailableError, sendMessage } from '~/utils/messaging'
 import type { SettingsStoragePatch, SettingsStoragePatchResponse } from '~/utils/settingsStorageProtocol'
 import {
@@ -176,10 +177,7 @@ export function useSettingsStorage<T extends object>(
 
     canonicalRevision = normalizedRevision
     canonicalFingerprint = fingerprint
-    canonicalValue = {
-      ...asRecord(cloneValue(defaults)),
-      ...parseStoredSettings(storedValue),
-    }
+    canonicalValue = readSettingsDocument(parseStoredSettings(storedValue), asRecord(cloneValue(defaults)))
     renderCanonicalValue()
   }
 
@@ -239,6 +237,7 @@ export function useSettingsStorage<T extends object>(
       epoch: currentEpoch,
       operationId: nextOperationId++,
       patch,
+      document: asRecord(cloneValue(state)),
     }
 
     try {

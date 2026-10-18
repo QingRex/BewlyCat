@@ -23,17 +23,14 @@ interface UselessFeedCardBlockerContext {
   blockAds: boolean
   homePage: boolean
   inIframe: boolean
-  useOriginalBilibiliHomepage: boolean
 }
 
 export function shouldEnableUselessFeedCardBlocker({
   blockAds,
   homePage,
   inIframe,
-  useOriginalBilibiliHomepage,
 }: UselessFeedCardBlockerContext) {
-  // 自定义首页隐藏了原站信息流，无需监听；iframe 内仍使用原站页面。
-  return blockAds && homePage && (inIframe || useOriginalBilibiliHomepage)
+  return blockAds && homePage && inIframe
 }
 
 function getObserveRoot(): Element {

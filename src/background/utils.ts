@@ -9,7 +9,6 @@ import { waitWithSignal } from '~/utils/abort'
 
 import { createApiResponseCache } from './apiResponseCache'
 import { withRequestTimeout } from './requestTimeout'
-import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, storeWbiKeys } from './wbiSign'
 
 const cacheApiResponse = createApiResponseCache()
 
@@ -184,31 +183,11 @@ async function performApiRequest(message: Message, api: API, cookies?: Browser.C
     })
 
     const baseUrl = url
-    const needsWbi = needsWbiSign(url)
-    const wbiKeyOptions = { noCookie: credentials === 'omit' }
 
-    // 如果需要WBI签名但没有密钥，主动获取密钥
-    if (needsWbi && !getWbiKeys(wbiKeyOptions)) {
-      try {
-        await waitWithSignal(initWbiKeys(wbiKeyOptions), signal)
-      }
-      catch (error) {
-        signal?.throwIfAborted()
-        // 获取密钥失败，继续执行（降级到无签名请求）
-        console.error('[doRequest] Failed to fetch WBI keys:', error)
-      }
-    }
-
-    // 内部函数：执行实际请求
-    const performRequest = (useWbi: boolean) => {
+    const performRequest = () => {
       signal?.throwIfAborted()
       let requestUrl = baseUrl
-      let requestParams = Object.assign({}, targetParams)
-
-      // 为需要WBI签名的API添加签名
-      if (needsWbi && useWbi) {
-        requestParams = addWbiSign(requestParams, wbiKeyOptions)
-      }
+      const requestParams = Object.assign({}, targetParams)
       // generate params
       if (Object.keys(requestParams).length) {
         const urlParams = new URLSearchParams()
@@ -240,16 +219,6 @@ async function performApiRequest(message: Message, api: API, cookies?: Browser.C
         requestHeaders['firefox-multi-account-cookie'] = cookieStr
       }
 
-      // 添加Referer以防止风控
-      if (!requestHeaders.Referer) {
-        requestHeaders.Referer = 'https://www.bilibili.com/'
-      }
-
-      // 对于UP主空间相关的API，设置正确的Referer
-      if (requestUrl.includes('/x/space/wbi/arc/search') && targetParams.mid) {
-        requestHeaders.Referer = `https://space.bilibili.com/${targetParams.mid}/`
-      }
-
       // get cant take body
       const fetchOpt: any = {
         method,
@@ -263,111 +232,14 @@ async function performApiRequest(message: Message, api: API, cookies?: Browser.C
       return fetch(requestUrl, fetchOpt)
     }
 
-    // 标记是否已经尝试过无 WBI 重试
-    let hasTriedWithoutWbi = false
-    let hasRefreshedWbiKeys = false
-
-    function isWbiSignatureRejected(response: unknown): boolean {
-      return Boolean(
-        response
-        && typeof response === 'object'
-        && 'code' in response
-        && response.code === -403,
-      )
-    }
-
-    // 执行完整请求流程的函数（包括响应处理）
-    const executeFullRequest = async (useWbi: boolean) => {
-      let response = await performRequest(useWbi)
-
-      // 如果是获取用户信息的API，在响应后存储WBI密钥
-      if (isBilibiliNavUrl(baseUrl)) {
-        const clonedResponse = response.clone()
-
-        try {
-          const data = await clonedResponse.json()
-
-          if (data.code === 0 && data.data && data.data.wbi_img) {
-            const { img_url, sub_url } = data.data.wbi_img
-            if (img_url && sub_url) {
-              storeWbiKeys(img_url, sub_url, wbiKeyOptions)
-            }
-          }
-        }
-        catch {
-          // 忽略错误
-        }
-      }
-
-      // 执行 afterHandle 处理
+    const executeFullRequest = async () => {
+      let response = await performRequest()
       for (const func of afterHandle)
         response = await func(response as any)
-
       return response
     }
 
-    // 执行请求的包装函数，支持 WBI 降级重试
-    const executeRequestWithRetry = async () => {
-      try {
-        // 首次请求（使用 WBI 签名，如果需要）
-        let response = await executeFullRequest(true)
-
-        // WBI 密钥可能在缓存有效期内被服务端轮换。收到 -403 时强制刷新一次，
-        // 避免把签名失效误判成业务侧的访问权限不足。
-        if (needsWbi && !hasRefreshedWbiKeys && isWbiSignatureRejected(response)) {
-          hasRefreshedWbiKeys = true
-          console.warn('[BewlyCat][WBI] 签名被接口拒绝，刷新密钥后重试', {
-            url: baseUrl,
-            noCookie: wbiKeyOptions.noCookie,
-            code: -403,
-          })
-          clearWbiKeys(wbiKeyOptions)
-          const refreshed = await waitWithSignal(initWbiKeys(wbiKeyOptions), signal)
-          if (refreshed) {
-            response = await executeFullRequest(true)
-            if (isWbiSignatureRejected(response)) {
-              console.error('[BewlyCat][WBI] 刷新密钥后签名仍被接口拒绝', {
-                url: baseUrl,
-                noCookie: wbiKeyOptions.noCookie,
-                code: -403,
-              })
-            }
-          }
-          else {
-            console.error('[BewlyCat][WBI] 签名被接口拒绝且密钥刷新失败', {
-              url: baseUrl,
-              noCookie: wbiKeyOptions.noCookie,
-              code: -403,
-            })
-          }
-        }
-
-        return response
-      }
-      catch (error) {
-        // 用户取消和总超时不能触发无签名重试。
-        signal?.throwIfAborted()
-        // 如果使用了 WBI 签名且失败，尝试不带 WBI 签名重试
-        if (needsWbi && !hasTriedWithoutWbi) {
-          hasTriedWithoutWbi = true
-          const errorRecord = error && typeof error === 'object'
-            ? error as Record<string, unknown>
-            : undefined
-          console.warn('[BewlyCat][WBI] 带签名请求异常，降级为无签名请求', {
-            url: baseUrl,
-            noCookie: wbiKeyOptions.noCookie,
-            code: errorRecord?.code,
-            message: error instanceof Error ? error.message : String(error),
-            error,
-          })
-          return await executeFullRequest(false)
-        }
-        throw error
-      }
-    }
-
-    // 执行请求并进行统一错误处理
-    return executeRequestWithRetry().catch((error) => {
+    return executeFullRequest().catch((error) => {
       signal?.throwIfAborted()
       if (error instanceof ApiRiskControlError) {
         // 返回统一的风控错误格式

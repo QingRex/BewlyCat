@@ -11,7 +11,6 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import VolumeBalance from '../VolumeBalance/VolumeBalance.vue'
-import PlaybackRate from './PlaybackRate.vue'
 
 const { t } = useI18n()
 
@@ -282,8 +281,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
           w="180px"
         />
       </SettingsItem>
-
-      <PlaybackRate />
 
       <SettingsItemSubgroup
         :title="t('settings.group_playback_memory')"

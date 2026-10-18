@@ -3,7 +3,7 @@ import type { Manifest } from 'webextension-polyfill'
 
 import type PkgType from '../package.json'
 import { isDev, isFirefox, isSafari, port, r } from '../scripts/utils'
-import { CONTENT_SCRIPT_EXCLUDE_MATCHES, CONTENT_SCRIPT_MATCHES } from './constants/contentScript'
+import { CONTENT_SCRIPT_MATCHES } from './constants/contentScript'
 
 export async function getManifest() {
   const pkg = await fs.readJSON(r('package.json')) as typeof PkgType
@@ -38,35 +38,24 @@ export async function getManifest() {
     },
     permissions: [
       'storage',
-      'declarativeNetRequest',
-      'cookies',
       ...(!isSafari ? ['scripting'] : []),
-      ...isFirefox
-        ? ['webRequest', 'webRequestBlocking']
-        : [],
     ],
     host_permissions: [
-      '*://*.bilibili.com/*',
-      '*://*.hdslb.com/*',
+      '*://www.youtube.com/*',
     ],
-    // IframePage and IframeDrawer embed supported Bilibili pages and rely on the
-    // content scripts for styling, layout synchronization, and interactions.
-    // Blank frames are not supported pages, so match_about_blank is intentionally omitted.
+    // 只匹配 www.youtube.com 的顶层文档。子框架不注入，match_about_blank 也不打开。
     content_scripts: [
       {
         matches: [...CONTENT_SCRIPT_MATCHES],
-        exclude_matches: [...CONTENT_SCRIPT_EXCLUDE_MATCHES],
         js: ['./dist/contentScripts/pageLoading.js', './dist/contentScripts/index.global.js'],
-        css: ['./dist/contentScripts/style.css'],
         run_at: 'document_start',
-        all_frames: true,
+        all_frames: false,
       },
       {
         matches: [...CONTENT_SCRIPT_MATCHES],
-        exclude_matches: [...CONTENT_SCRIPT_EXCLUDE_MATCHES],
         js: ['./dist/contentScripts/inject.global.js'],
         run_at: 'document_start',
-        all_frames: true,
+        all_frames: false,
         world: 'MAIN',
       },
     ],
@@ -74,7 +63,6 @@ export async function getManifest() {
       {
         resources: [
           'assets/*',
-          'dist/contentScripts/listenVideoControl.js',
         ],
         matches: [...CONTENT_SCRIPT_MATCHES],
       },
@@ -88,19 +76,6 @@ export async function getManifest() {
           // this is required on dev for Vite script to load
             ? `script-src 'self' http://localhost:${port}; object-src 'self' http://localhost:${port}`
             : 'script-src \'self\'; object-src \'self\'',
-        },
-    ...isFirefox
-      ? {}
-      : {
-          declarative_net_request: {
-            rule_resources: [
-              {
-                id: 'ruleset_1',
-                enabled: true,
-                path: 'assets/rules.json',
-              },
-            ],
-          },
         },
   }
 

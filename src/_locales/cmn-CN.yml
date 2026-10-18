@@ -1807,3 +1807,23 @@ inject:
   load_more: 加载更多
   expand_all_replies: 加载全部
   load_reply_pages: '加载 {count} 页'
+youtube_home:
+  title: YouTube
+  search_placeholder: 搜索
+  search_submit: 搜索
+  empty: 这一页没有视频
+  error: 没能继续加载
+  retry: 重试
+  settings: 设置
+  theme: 主题
+  theme_auto: 跟随系统
+  theme_light: 浅色
+  theme_dark: 深色
+  wallpaper: 壁纸地址
+  grid_density: 网格密度
+  close: 完成
+youtube_search:
+  heading: '{query} - YouTube'
+  empty: 没有结果
+  channel: 频道
+  playlist: 播放列表

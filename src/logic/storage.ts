@@ -273,6 +273,7 @@ export interface FavoriteOrganizerFolder {
 }
 
 export interface Settings {
+  version: 1
   showLocalLoudnessButton: boolean
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
@@ -540,7 +541,6 @@ export interface Settings {
   adaptToOtherPageStyles: boolean
   enableTopBar: boolean
   useOriginalBilibiliTopBar: boolean
-  useOriginalBilibiliHomepage: boolean
   preventMobileRedirect: boolean
 
   // Video Player
@@ -611,6 +611,7 @@ export const originalLocalSettings: LocalSettings = {
 }
 
 export const originalSettings: Settings = {
+  version: 1,
   showLocalLoudnessButton: true,
   localLoudnessEnabled: false,
   localLoudnessTarget: -18,
@@ -870,7 +871,6 @@ export const originalSettings: Settings = {
   adaptToOtherPageStyles: true,
   enableTopBar: true,
   useOriginalBilibiliTopBar: false,
-  useOriginalBilibiliHomepage: false,
   preventMobileRedirect: false,
 
   // Video Player

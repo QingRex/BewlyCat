@@ -9,7 +9,6 @@ const outDir = isFirefox ? 'extension-firefox/dist' : isSafari ? 'extension-safa
 
 export default defineConfig(() => ({
   entry: {
-    'contentScripts/listenVideoControl': './src/contentScripts/listenVideoControl.ts',
     'background/index': './src/background/index.ts',
     'contentScripts/pageLoading': './src/contentScripts/pageLoading.ts',
   },

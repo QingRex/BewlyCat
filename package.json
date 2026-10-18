@@ -39,6 +39,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typecheck": "vue-tsc",
+    "check:youtube-feed": "esno scripts/check-youtube-feed.ts",
     "postinstall": "simple-git-hooks",
     "knip": "knip",
     "submit": "run-p --npm-path pnpm submit:*",

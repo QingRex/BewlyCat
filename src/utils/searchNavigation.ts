@@ -17,7 +17,6 @@ const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
 
 export function shouldUsePluginSearchResultsPage(): boolean {
   return settings.value.usePluginSearchResultsPage
-    && !settings.value.useOriginalBilibiliHomepage
 }
 
 /**

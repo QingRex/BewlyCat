@@ -1,0 +1,10 @@
+{
+  "responseContext": { "serviceTrackingParams": [] },
+  "playabilityStatus": { "status": "OK" },
+  "videoDetails": {
+    "videoId": "dQw4w9WgXcQ",
+    "title": "Watch page",
+    "channelId": "UC1234567890",
+    "author": "Sample channel"
+  }
+}

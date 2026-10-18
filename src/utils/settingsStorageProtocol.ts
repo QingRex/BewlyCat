@@ -13,6 +13,7 @@ export interface SettingsStoragePatchRequest {
   epoch: string
   operationId: number
   patch: SettingsStoragePatch
+  document?: Record<string, unknown>
 }
 
 export interface SettingsStoragePatch {
@@ -41,7 +42,7 @@ export interface SettingsStorageWriteMeta {
   revision: number
 }
 
-const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype', 'useOriginalBilibiliHomepage'])
 
 function hasOwn(record: Record<string, unknown>, key: string) {
   return Object.prototype.hasOwnProperty.call(record, key)
@@ -213,12 +214,26 @@ export function normalizeSettingsStoragePatchRequest(value: unknown): SettingsSt
     return null
   }
 
+  const document = asSettingsDocument(candidate.document)
   return {
     clientId: candidate.clientId,
     epoch: candidate.epoch,
     operationId: candidate.operationId!,
     patch,
+    document,
   }
+}
+
+function asSettingsDocument(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return undefined
+
+  const document: Record<string, unknown> = {}
+  for (const [key, next] of Object.entries(value)) {
+    if (!BLOCKED_KEYS.has(key))
+      document[key] = next
+  }
+  return document
 }
 
 export function normalizeSettingsStorageWriteMeta(value: unknown): SettingsStorageWriteMeta {

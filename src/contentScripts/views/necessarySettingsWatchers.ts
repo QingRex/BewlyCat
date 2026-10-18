@@ -227,7 +227,6 @@ export function setupNecessarySettingsWatchers() {
         blockAds: settings.value.blockAds,
         homePage: isHomePage(),
         inIframe: isInIframe(),
-        useOriginalBilibiliHomepage: settings.value.useOriginalBilibiliHomepage,
       }),
     )
   }
@@ -242,7 +241,7 @@ export function setupNecessarySettingsWatchers() {
 
   // 只在原版首页标记卡片；切回自定义首页时释放监听器和待处理节点。
   watch(
-    [() => settings.value.blockAds, () => settings.value.useOriginalBilibiliHomepage],
+    [() => settings.value.blockAds],
     refreshUselessFeedCardBlocker,
     { immediate: true },
   )
@@ -339,12 +338,10 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    () => settings.value.useOriginalBilibiliHomepage,
-    (useOriginalBilibiliHomepage) => {
-      // 只有外层 BewlyCat 自定义首页需要接管原版顶栏第二行，原版首页交还给 B 站或第三方顶栏控制。
-      const useBewlyHomepage = !isInIframe() && isHomePage() && !useOriginalBilibiliHomepage
+    () => isHomePage(),
+    () => {
+      const useBewlyHomepage = !isInIframe() && isHomePage()
       document.documentElement.classList.toggle('bewly-custom-homepage', useBewlyHomepage)
-
       applyOuterTopBarPolicy()
     },
     { immediate: true },
@@ -551,7 +548,7 @@ export function setupNecessarySettingsWatchers() {
     }
 
     // Handle homepage-specific logic
-    if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
+    if (isHomePage()) {
       // When the homepage is showing an original Bilibili page inside our iframe (dock item "useOriginalBiliPage"),
       // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
       const shouldHideOuterBiliTopBar = hasBiliIframePage()

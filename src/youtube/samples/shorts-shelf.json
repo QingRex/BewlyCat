@@ -1,0 +1,79 @@
+{
+  "contents": {
+    "twoColumnBrowseResultsRenderer": {
+      "tabs": [
+        {
+          "tabRenderer": {
+            "content": {
+              "richGridRenderer": {
+                "contents": [
+                  {
+                    "richSectionRenderer": {
+                      "content": {
+                        "richShelfRenderer": {
+                          "title": { "simpleText": "Shorts" },
+                          "contents": [
+                            {
+                              "reelItemRenderer": {
+                                "videoId": "shortVideo1",
+                                "headline": { "simpleText": "A short" }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "adSlotRenderer": {
+                          "adSlotMetadata": { "slotId": "home-ad" }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "surveyRenderer": {
+                          "title": { "simpleText": "How is YouTube?" }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "videoRenderer": {
+                          "videoId": "videoKept01",
+                          "title": { "simpleText": "Kept video" },
+                          "ownerText": {
+                            "runs": [
+                              {
+                                "text": "Kept channel",
+                                "navigationEndpoint": {
+                                  "browseEndpoint": { "browseId": "UCkept" }
+                                }
+                              }
+                            ]
+                          },
+                          "thumbnail": {
+                            "thumbnails": [
+                              { "url": "https://i.ytimg.com/vi/videoKept01/hqdefault.jpg" }
+                            ]
+                          },
+                          "lengthText": { "simpleText": "4:05" }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

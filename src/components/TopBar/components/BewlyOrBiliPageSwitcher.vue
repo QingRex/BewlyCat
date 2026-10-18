@@ -76,7 +76,7 @@ const options = readonly([
 ])
 
 const showBewlyOrBiliPageSwitcher = computed(() => {
-  if (settings.value.useOriginalBilibiliHomepage || isInIframe())
+  if (isInIframe())
     return false
 
   if (isHomePage()) {

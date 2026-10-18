@@ -636,7 +636,6 @@ const layoutEditDockPageConfig = computed(() => {
 const showLayoutEditPageModeAction = computed(() => {
   return Boolean(
     isLayoutEditing.value
-    && !settings.value.useOriginalBilibiliHomepage
     && layoutEditDockPage.value?.hasBewlyPage,
   )
 })
@@ -646,7 +645,7 @@ const showLayoutEditSearchResultsAction = computed(() => {
 })
 
 const layoutEditGridActionKind = computed<'video-card' | 'moments' | undefined>(() => {
-  if (!isLayoutEditing.value || settings.value.useOriginalBilibiliHomepage)
+  if (!isLayoutEditing.value)
     return undefined
 
   if (activatedPage.value === AppPage.SearchResults)
@@ -994,7 +993,7 @@ useEventListener(window, 'scroll', scheduleLayoutEditTargetsRefresh, { passive: 
 onUnmounted(stopLayoutEditTargetObserver)
 const scrollViewportRef = ref<HTMLElement | null>(null)
 watch(scrollViewportRef, (viewport, _previousViewport, onCleanup) => {
-  if (viewport && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
+  if (viewport && isHomePage())
     onCleanup(installScrollBridge(viewport))
 }, { flush: 'post' })
 
@@ -1322,7 +1321,7 @@ function handleMetaHomeKeydown(e: KeyboardEvent) {
 }
 
 function handleDocumentScroll() {
-  if (scrollViewportRef.value && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
+  if (scrollViewportRef.value && isHomePage())
     return
 
   scrollTop.value = window.scrollY
@@ -1335,7 +1334,7 @@ onMounted(() => {
 
   // ✅ 设置 IntersectionObserver 用于无限滚动底部检测（仅在首页且使用Bewly页面时）
   // 避免在每次滚动时读取 scrollHeight/clientHeight
-  if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
+  if (isHomePage()) {
     nextTick(() => {
       if (!isAppMounted)
         return
@@ -1988,7 +1987,7 @@ if (settings.value.cleanUrlArgument) {
       }"
     >
       <Dock
-        v-if="!settings.useOriginalBilibiliHomepage && (settings.alwaysUseDock || (showBewlyPage || iframePageURL))"
+        v-if="settings.alwaysUseDock || showBewlyPage || iframePageURL"
         pointer-events-auto
         :activated-page="activatedPage"
         @refresh="handleThrottledPageRefresh"

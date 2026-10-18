@@ -1,0 +1,74 @@
+{
+  "contents": {
+    "twoColumnBrowseResultsRenderer": {
+      "tabs": [
+        {
+          "tabRenderer": {
+            "content": {
+              "richGridRenderer": {
+                "contents": [
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "videoRenderer": {
+                          "videoId": "dQw4w9WgXcQ",
+                          "ownerText": {
+                            "runs": [
+                              {
+                                "text": "Sample channel",
+                                "navigationEndpoint": {
+                                  "browseEndpoint": { "browseId": "UC1234567890" }
+                                }
+                              }
+                            ]
+                          },
+                          "thumbnail": {
+                            "thumbnails": [
+                              { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "videoRenderer": {
+                          "title": { "simpleText": "Missing id" },
+                          "thumbnail": {
+                            "thumbnails": [
+                              { "url": "https://i.ytimg.com/vi/missing/hqdefault.jpg" }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "channelRenderer": {
+                          "channelId": "UCchannelonly"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "richItemRenderer": {
+                      "content": {
+                        "playlistRenderer": {
+                          "playlistId": "PLsample"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

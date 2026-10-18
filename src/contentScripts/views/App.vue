@@ -16,6 +16,7 @@ import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_SEARCH_NAVIGATION, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { installScrollBridge } from '~/contentScripts/features/scrollBridge'
+import { readPageIdentity } from '~/contentScripts/pageIdentity'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings, settingsReady } from '~/logic'
@@ -25,7 +26,7 @@ import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
-import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
+import { isHomePage, isInIframe, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
@@ -1165,22 +1166,19 @@ const iframePageURL = computed((): string => {
   return ''
 })
 const showBewlyPage = computed((): boolean => {
-  if (isInIframe())
-    return false
-
-  // SearchResults 页面是虚拟页面，不在 dockItems 中，但应该显示
-  if (activatedPage.value === AppPage.SearchResults) {
-    return isHomePage() && !settings.value.useOriginalBilibiliHomepage
+  const page = readPageIdentity(location.href)
+  switch (page.kind) {
+    case 'home':
+    case 'search':
+      // 解析成功前不打开自定义视图，因此不挂会接收指针的顶栏，也不留高度为 0 的壳。
+      return false
+    case 'passthrough':
+      return false
+    default: {
+      const _exhaustive: never = page
+      return _exhaustive
+    }
   }
-
-  const dockItem = mainStore.getDockItemByPage(activatedPage.value)
-  if (!dockItem?.hasBewlyPage)
-    return false
-
-  if (iframePageURL.value)
-    return false
-
-  return isHomePage() && !settings.value.useOriginalBilibiliHomepage
 })
 
 // App outlives page components. Drop outgoing closures before the next page
@@ -1219,29 +1217,7 @@ watch(dockPageTitle, (title) => {
     document.title = title
 }, { immediate: true })
 
-const showTopBar = computed((): boolean => {
-  // When using the open in drawer feature, the iframe inside the page will hide the top bar
-  if (isVideoOrBangumiPage() && isInIframe())
-    return false
-
-  // when user open the notifications page as a drawer, don't show the top bar
-  if (isNotificationPage() && settings.value.openNotificationsPageAsDrawer && isInIframe())
-    return false
-
-  // Always show TopBar in the outer layer, never inside iframe
-  // This ensures TopBar is always visible outside of iframe content
-  if (isInIframe())
-    return false
-
-  // when using original bilibili homepage, show top bar
-  return settings.value.useOriginalBilibiliHomepage
-  // when on home page and not using original bilibili page, show top bar
-    || (isHomePage() && !settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value))
-  // when using original bilibili page on home page, show top bar in outer layer
-    || (isHomePage() && settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value))
-  // when not on home page, show top bar
-    || !isHomePage()
-})
+const showTopBar = computed((): boolean => showBewlyPage.value)
 
 function getActiveElement(): Element | null {
   const shadowRoot = document.getElementById('bewly')?.shadowRoot
@@ -1841,7 +1817,7 @@ if (settings.value.cleanUrlArgument) {
     class="bewly-wrapper"
     :class="{
       'dark': isDark,
-      'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
+      'bewly-wrapper--viewport': showBewlyPage,
     }"
     text="$bew-text-1"
     @pointerdown.capture="blockOriginalLayoutInteraction"
@@ -2057,11 +2033,9 @@ if (settings.value.cleanUrlArgument) {
     />
 
     <div
-      v-if="!settings.useOriginalBilibiliHomepage"
+      v-if="showBewlyPage || (!!iframePageURL && !isInIframe())"
       pos="absolute top-0 left-0" w-full h-full
-      :style="{
-        height: showBewlyPage || iframePageURL ? '100dvh' : '0',
-      }"
+      :style="{ height: '100dvh' }"
     >
       <Transition name="fade">
         <template v-if="showBewlyPage">

@@ -21,18 +21,16 @@ function embedContentScriptStyles(): Plugin {
         output => output.type === 'chunk' && output.fileName === 'index.global.js',
       )
 
-      if (!styleAsset || styleAsset.type !== 'asset') {
-        this.error('Unable to embed content script styles: style.css was not emitted.')
-        return
-      }
       if (!contentScriptChunk || contentScriptChunk.type !== 'chunk') {
         this.error('Unable to embed content script styles: index.global.js was not emitted.')
         return
       }
 
-      const css = typeof styleAsset.source === 'string'
-        ? styleAsset.source
-        : new TextDecoder().decode(styleAsset.source)
+      const css = !styleAsset || styleAsset.type !== 'asset'
+        ? ''
+        : typeof styleAsset.source === 'string'
+          ? styleAsset.source
+          : new TextDecoder().decode(styleAsset.source)
       contentScriptChunk.code = `globalThis.${BUNDLED_STYLE_GLOBAL}=${JSON.stringify(css)};\n${contentScriptChunk.code}`
     },
   }

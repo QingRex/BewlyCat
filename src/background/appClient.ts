@@ -144,7 +144,6 @@ async function syncAppClientHeaderRules() {
       removeRuleIds: APP_CLIENT_HEADER_RULES.map(rule => rule.id),
       addRules: APP_CLIENT_HEADER_RULES.map(rule => ({
         id: rule.id,
-        // 高于 assets/rules.json 中为 passport POST 设置 Origin 的静态规则
         priority: 3,
         action: {
           type: 'modifyHeaders',

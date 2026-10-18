@@ -1,26 +1,4 @@
-import { toggleListenVideo } from '~/contentScripts/listenVideoFeature'
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
-import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
-// 导入需要的函数
-import {
-  adjustVideoSize,
-  changePlaybackRate,
-  playPause as playerPlayPause,
-  replay as playerReplay,
-  resetPlaybackRate,
-  showDanmuState,
-  stepSeek,
-  toggleCaption,
-  toggleClockTime,
-  toggleLight,
-  togglePictureInPicture,
-  toggleVideoTime,
-  toggleVideoTitle,
-  webFullscreenClick,
-  widescreenClick,
-} from '~/utils/player'
-import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 
 // 定义快捷键处理器类型
 type ShortcutHandler = (e: KeyboardEvent, player?: Element) => void
@@ -121,9 +99,6 @@ export function setupShortcutHandlers() {
     delete shortcutHandlers[id]
   })
 
-  // 注册默认快捷键处理器
-  registerDefaultHandlers()
-
   // 更新快捷键配置缓存
   updateShortcutsCache()
 
@@ -153,9 +128,6 @@ export function setupShortcutHandlers() {
     // 如果没有缓存的快捷键配置，直接返回
     if (!cachedShortcuts)
       return
-
-    // 获取播放器元素
-    const player = document.querySelector('.bpx-player') || document.querySelector('.bilibili-player')
 
     // 生成当前按键组合
     const keyCombo = generateKeyCombo(e)
@@ -191,23 +163,13 @@ export function setupShortcutHandlers() {
           // 兼容：配置为 '+' 时，允许直接按 '=' 键触发（标准键盘上 '+' 需要 Shift+=）
           if (configKey.toLowerCase() === keyCombo.toLowerCase()
             || (configKey === '+' && keyCombo === '=')) {
-            // 截图与听视频只在视频播放页响应，避免拦截其他页面或输入法的按键。
-            if ((id === 'videoScreenshot' || id === 'listenVideo')
-              && (e.isComposing || !(isVideoPlaybackPage() || isVideoOrBangumiPage()))) {
-              continue
-            }
-
-            if (id === 'listenVideo' && !settings.value.enableListenVideo)
-              continue
-
-            // 获取处理函数
             const handler = shortcutHandlers[id]
             if (handler) {
               e.preventDefault()
               e.stopImmediatePropagation()
 
               try {
-                handler(e, player || undefined)
+                handler(e)
               }
               catch {
                 // 处理器执行错误
@@ -229,280 +191,6 @@ export function setupShortcutHandlers() {
   // 添加事件监听器
   // 在 window 捕获阶段监听，确保覆盖时先于 Bilibili 的 document/播放器处理器拦截事件。
   window.addEventListener('keydown', keydownListener, true)
-}
-
-/**
- * 注册默认的快捷键处理器
- */
-export function registerDefaultHandlers(): void {
-  // 弹幕开关
-  // 弹幕状态显示（不切换状态）
-  registerShortcutHandler('danmuStatus', () => {
-    // 只显示当前弹幕状态，不切换
-    showDanmuState()
-  })
-
-  // 网页全屏
-  registerShortcutHandler('webFullscreen', () => {
-    if (isBewlyWidescreenActive())
-      exitBewlyWidescreen({ userInitiated: true })
-    webFullscreenClick()
-  })
-
-  // 宽屏
-  registerShortcutHandler('widescreen', () => {
-    if (isBewlyWidescreenActive())
-      exitBewlyWidescreen({ userInitiated: true })
-    widescreenClick()
-  })
-
-  // Bewly 宽屏
-  registerShortcutHandler('bewlyWidescreen', (event) => {
-    if (event.repeat)
-      return
-
-    if (isBewlyWidescreenEngaged()) {
-      exitBewlyWidescreen({ userInitiated: true })
-      return
-    }
-
-    const isBrowserFullscreen = !!(document.fullscreenElement
-      || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
-    const webFullscreenButton = document.querySelector<HTMLElement>('.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen')
-    if (!isVideoOrBangumiPage()
-      || isBrowserFullscreen
-      || webFullscreenButton?.classList.contains('bpx-state-entered')) {
-      return
-    }
-
-    applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
-  })
-
-  // 短步后退
-  registerShortcutHandler('shortStepBackward', () => {
-    stepSeek(false, 5)
-  })
-
-  // 长步后退
-  registerShortcutHandler('longStepBackward', () => {
-    stepSeek(false, 30)
-  })
-
-  // 短步前进
-  registerShortcutHandler('shortStepForward', () => {
-    stepSeek(true, 5)
-  })
-
-  // 长步前进
-  registerShortcutHandler('longStepForward', () => {
-    stepSeek(true, 30)
-  })
-
-  // 播放/暂停
-  registerShortcutHandler('playPause', (e, player) => {
-    playerPlayPause(player)
-  })
-
-  // 画中画
-  registerShortcutHandler('pip', () => {
-    togglePictureInPicture()
-  })
-
-  // 关灯
-  registerShortcutHandler('turnOffLight', () => {
-    toggleLight()
-  })
-
-  // 字幕
-  registerShortcutHandler('caption', () => {
-    toggleCaption()
-  })
-
-  // 视频截图独立于控制栏按钮开关，长按时只截取一次。
-  registerShortcutHandler('videoScreenshot', (event) => {
-    if (event.repeat)
-      return
-
-    void captureVideoScreenshot()
-  })
-
-  // 听视频模式独立于控制栏按钮开关，长按时不重复切换。
-  registerShortcutHandler('listenVideo', (event) => {
-    if (event.repeat)
-      return
-
-    void toggleListenVideo()
-  })
-
-  // 增加播放速度
-  registerShortcutHandler('increasePlaybackRate', () => {
-    changePlaybackRate(true)
-  })
-
-  // 减少播放速度
-  registerShortcutHandler('decreasePlaybackRate', () => {
-    changePlaybackRate(false)
-  })
-
-  // 重置播放速度
-  registerShortcutHandler('resetPlaybackRate', () => {
-    resetPlaybackRate()
-  })
-
-  // 随机播放切换已移除
-
-  // 上一帧
-  registerShortcutHandler('previousFrame', () => {
-    stepSeek(false, 0.042)
-  })
-
-  // 下一帧
-  registerShortcutHandler('nextFrame', () => {
-    stepSeek(true, 0.042)
-  })
-
-  // 重播
-  registerShortcutHandler('replay', () => {
-    playerReplay()
-  })
-
-  // 增加视频大小
-  registerShortcutHandler('increaseVideoSize', () => {
-    adjustVideoSize(1)
-  })
-
-  // 减少视频大小
-  registerShortcutHandler('decreaseVideoSize', () => {
-    adjustVideoSize(-1)
-  })
-
-  // 重置视频大小
-  registerShortcutHandler('resetVideoSize', () => {
-    adjustVideoSize(0)
-  })
-
-  // 视频标题
-  registerShortcutHandler('videoTitle', () => {
-    toggleVideoTitle()
-  })
-
-  // 视频时间
-  registerShortcutHandler('videoTime', () => {
-    toggleVideoTime()
-  })
-
-  // 时钟时间
-  registerShortcutHandler('clockTime', () => {
-    toggleClockTime()
-  })
-
-  // 关注/取消关注
-  registerShortcutHandler('toggleFollow', () => {
-    toggleFollow()
-  })
-}
-
-/**
- * 切换关注/取消关注
- * 在视频页点击关注按钮
- */
-function toggleFollow(): void {
-  try {
-    // 查找关注按钮
-    const followButton = document.querySelector<HTMLElement>(
-      '.upinfo-btn-panel .follow-btn, ' // 新版视频页
-      + '.up-info .follow-btn, ' // 旧版视频页
-      + '.video-info-detail .follow-btn, ' // 其他可能的位置
-      + 'button.follow-btn', // 通用关注按钮
-    )
-
-    if (!followButton) {
-      return
-    }
-
-    // 检查是否未关注状态（有 not-follow 类）
-    const isNotFollowing = followButton.classList.contains('not-follow')
-
-    // 创建并触发鼠标事件，确保Vue组件能响应
-    const triggerClick = (element: HTMLElement) => {
-      // 尝试多种方式触发点击
-      // 1. 标准 click
-      element.click()
-
-      // 2. 触发 mousedown 和 mouseup 事件
-      const mouseDownEvent = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      })
-      const mouseUpEvent = new MouseEvent('mouseup', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      })
-      const clickEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      })
-
-      element.dispatchEvent(mouseDownEvent)
-      element.dispatchEvent(mouseUpEvent)
-      element.dispatchEvent(clickEvent)
-    }
-
-    if (isNotFollowing) {
-      // 未关注，直接点击关注
-      // 尝试找到内部的 follow-btn-inner 元素
-      const innerButton = followButton.querySelector<HTMLElement>('.follow-btn-inner')
-      if (innerButton) {
-        triggerClick(innerButton)
-      }
-      else {
-        triggerClick(followButton)
-      }
-    }
-    else {
-      // 已关注，需要打开下拉菜单后点击"取消关注"
-      // 先尝试点击内部元素
-      const innerButton = followButton.querySelector<HTMLElement>('.follow-btn-inner')
-      if (innerButton) {
-        triggerClick(innerButton)
-      }
-      else {
-        triggerClick(followButton)
-      }
-
-      // 等待下拉框出现
-      setTimeout(() => {
-        try {
-          // 查找取消关注按钮 - 支持中英文
-          const unfollowItems = Array.from(
-            document.querySelectorAll<HTMLElement>(
-              '.follow_dropdown li, .van-popover li, .van-followed li, [class*="follow"] li',
-            ),
-          )
-
-          const unfollowButton = unfollowItems.find(
-            item =>
-              item.textContent?.includes('取消关注')
-              || item.textContent?.includes('取消關注')
-              || item.textContent?.toLowerCase().includes('unfollow'),
-          )
-
-          if (unfollowButton) {
-            triggerClick(unfollowButton)
-          }
-        }
-        catch (error) {
-          console.error('[BewlyCat] Error clicking unfollow:', error)
-        }
-      }, 150) // 增加等待时间到 150ms
-    }
-  }
-  catch (error) {
-    console.error('[BewlyCat] Error toggling follow:', error)
-  }
 }
 
 // 快捷键按键组合生成函数

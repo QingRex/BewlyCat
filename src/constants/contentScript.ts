@@ -1,22 +1,8 @@
 export const CONTENT_SCRIPT_HOSTS = [
-  'www.bilibili.com',
-  'search.bilibili.com',
-  't.bilibili.com',
-  'space.bilibili.com',
-  'message.bilibili.com',
-  'member.bilibili.com',
-  'account.bilibili.com',
-  'www.hdslb.com',
-  'passport.bilibili.com',
-  'music.bilibili.com',
+  'www.youtube.com',
 ] as const
 
 export const CONTENT_SCRIPT_MATCHES = CONTENT_SCRIPT_HOSTS.map(host => `*://${host}/*`)
-
-export const CONTENT_SCRIPT_EXCLUDE_MATCHES = [
-  '*://www.bilibili.com/match/game*',
-  '*://www.bilibili.com/toy*',
-]
 
 export const CONTENT_SCRIPT_PING = 'bewly-cat:content-script:ping'
 export const CONTENT_SCRIPT_PONG = 'bewly-cat:content-script:ready'
@@ -62,11 +48,7 @@ export function isContentScriptTargetUrl(value?: string): boolean {
     if (url.protocol !== 'http:' && url.protocol !== 'https:')
       return false
 
-    if (!CONTENT_SCRIPT_HOST_SET.has(url.hostname))
-      return false
-
-    return url.hostname !== 'www.bilibili.com'
-      || (!url.pathname.startsWith('/match/game') && !url.pathname.startsWith('/toy'))
+    return CONTENT_SCRIPT_HOST_SET.has(url.hostname)
   }
   catch {
     return false

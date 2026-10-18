@@ -267,6 +267,50 @@ function consume(value: unknown, sink: FeedSink, depth: number) {
     consume(record.content, sink, depth + 1)
 }
 
+function readAppendContinuationItems(record: Record<string, unknown>): unknown[] | undefined {
+  const action = asRecord(record.appendContinuationItemsAction)
+  if (action && Array.isArray(action.continuationItems))
+    return action.continuationItems
+  return undefined
+}
+
+function readRichGridContinuationItems(record: Record<string, unknown>): unknown[] | undefined {
+  const outer = asRecord(record.continuationContents)
+  const grid = outer && asRecord(outer.richGridContinuation)
+  if (grid && Array.isArray(grid.contents))
+    return grid.contents
+  return undefined
+}
+
+function findFirstList(
+  value: unknown,
+  read: (record: Record<string, unknown>) => unknown[] | undefined,
+): unknown[] | undefined {
+  const record = asRecord(value)
+  if (!record)
+    return undefined
+
+  const found = read(record)
+  if (found)
+    return found
+
+  for (const child of Object.values(record)) {
+    if (Array.isArray(child)) {
+      for (const item of child) {
+        const nested = findFirstList(item, read)
+        if (nested)
+          return nested
+      }
+    }
+    else {
+      const nested = findFirstList(child, read)
+      if (nested)
+        return nested
+    }
+  }
+  return undefined
+}
+
 function findFeedRoots(value: unknown, found: Record<string, unknown>[]): void {
   const record = asRecord(value)
   if (!record)
@@ -294,25 +338,7 @@ function findFeedRoots(value: unknown, found: Record<string, unknown>[]): void {
   }
 }
 
-/**
- * 把未知载荷收成一页卡片或类型化失败。
- * 空的信息流容器是成功的空页。Shorts、广告和其他非视频/频道/播放列表项直接丢掉。
- * 结构像信息流，但每个本应展示的项都因缺字段被丢掉时，结果是 items-discarded。
- */
-export function parseFeed(input: unknown): FeedParseResult {
-  const roots: Record<string, unknown>[] = []
-  findFeedRoots(input, roots)
-  if (roots.length === 0)
-    return { kind: 'not-feed' }
-
-  const sink: FeedSink = { cards: [], incomplete: 0 }
-  for (const root of roots) {
-    if (!Array.isArray(root.contents))
-      continue
-    for (const item of root.contents)
-      consume(item, sink, 0)
-  }
-
+function finishFeed(sink: FeedSink): FeedParseResult {
   if (sink.cards.length === 0 && sink.incomplete > 0)
     return { kind: 'items-discarded' }
 
@@ -320,6 +346,40 @@ export function parseFeed(input: unknown): FeedParseResult {
     return { kind: 'page', cards: sink.cards, continuation: sink.continuation }
 
   return { kind: 'page', cards: sink.cards }
+}
+
+function consumeList(items: unknown[], sink: FeedSink) {
+  for (const item of items)
+    consume(item, sink, 0)
+}
+
+/**
+ * 把未知载荷收成一页卡片或类型化失败。
+ * 空的信息流容器是成功的空页。Shorts、广告和其他非视频/频道/播放列表项直接丢掉。
+ * 结构像信息流，但每个本应展示的项都因缺字段被丢掉时，结果是 items-discarded。
+ * 找不到首页那种信息流根时，再认续页的两种列表，规则与首屏相同。
+ */
+export function parseFeed(input: unknown): FeedParseResult {
+  const roots: Record<string, unknown>[] = []
+  findFeedRoots(input, roots)
+  const sink: FeedSink = { cards: [], incomplete: 0 }
+
+  if (roots.length > 0) {
+    for (const root of roots) {
+      if (!Array.isArray(root.contents))
+        continue
+      consumeList(root.contents, sink)
+    }
+    return finishFeed(sink)
+  }
+
+  const continuationItems = findFirstList(input, readAppendContinuationItems)
+    ?? findFirstList(input, readRichGridContinuationItems)
+  if (!continuationItems)
+    return { kind: 'not-feed' }
+
+  consumeList(continuationItems, sink)
+  return finishFeed(sink)
 }
 
 function parseContinuation(value: unknown): ContinuationRequest | undefined {

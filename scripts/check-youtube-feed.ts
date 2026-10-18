@@ -72,6 +72,105 @@ if (shorts.cards[0]?.kind === 'video') {
 }
 assert.equal(shorts.continuation, undefined)
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return undefined
+  const record: Record<string, unknown> = {}
+  for (const key of Object.keys(value))
+    record[key] = Reflect.get(value, key)
+  return record
+}
+
+function firstRichGridItem(sample: unknown): unknown {
+  const record = asRecord(sample)
+  if (!record)
+    return undefined
+  const grid = asRecord(record.richGridRenderer)
+  if (grid && Array.isArray(grid.contents) && grid.contents.length > 0)
+    return grid.contents[0]
+  for (const child of Object.values(record)) {
+    if (Array.isArray(child)) {
+      for (const item of child) {
+        const found = firstRichGridItem(item)
+        if (found !== undefined)
+          return found
+      }
+    }
+    else {
+      const found = firstRichGridItem(child)
+      if (found !== undefined)
+        return found
+    }
+  }
+  return undefined
+}
+
+const continuationItem = firstRichGridItem(readSample('success.json'))
+assert.ok(continuationItem)
+
+function assertContinuationPage(result: ReturnType<typeof parseFeed>) {
+  assert.equal(result.kind, 'page')
+  if (result.kind !== 'page')
+    return
+  assert.equal(result.cards.length, 1)
+  assert.equal(result.cards[0]?.kind, 'video')
+  if (result.cards[0]?.kind === 'video') {
+    assert.equal(result.cards[0].videoId, 'dQw4w9WgXcQ')
+    assert.equal(result.cards[0].title, 'Sample video')
+  }
+  assert.deepEqual(result.continuation, {
+    target: '/youtubei/v1/browse?prettyPrint=false',
+    token: 'next-token',
+  })
+}
+
+const nextPage = {
+  continuationItemRenderer: {
+    continuationEndpoint: {
+      commandMetadata: { webCommandMetadata: { apiUrl: '/youtubei/v1/browse?prettyPrint=false' } },
+      continuationCommand: { token: 'next-token' },
+    },
+  },
+}
+
+assertContinuationPage(parseFeed({
+  onResponseReceivedActions: [{
+    appendContinuationItemsAction: {
+      continuationItems: [continuationItem, nextPage],
+    },
+  }],
+}))
+
+assertContinuationPage(parseFeed({
+  continuationContents: {
+    richGridContinuation: {
+      contents: [continuationItem, nextPage],
+    },
+  },
+}))
+
+const bothLists = parseFeed({
+  onResponseReceivedActions: [{
+    appendContinuationItemsAction: {
+      continuationItems: [continuationItem],
+    },
+  }],
+  continuationContents: {
+    richGridContinuation: {
+      contents: [continuationItem, continuationItem],
+    },
+  },
+})
+assert.equal(bothLists.kind, 'page')
+if (bothLists.kind === 'page')
+  assert.equal(bothLists.cards.length, 1)
+
+assert.deepEqual(parseFeed({
+  onResponseReceivedActions: [{
+    appendContinuationItemsAction: { continuationItems: [] },
+  }],
+}), { kind: 'page', cards: [] })
+
 const defaults = {
   version: SETTINGS_DOCUMENT_VERSION,
   theme: 'auto',

@@ -1837,3 +1837,8 @@ youtube_home:
   wallpaper: 桌布網址
   grid_density: 網格密度
   close: 完成
+youtube_search:
+  heading: '{query} - YouTube'
+  empty: 沒有結果
+  channel: 頻道
+  playlist: 播放清單

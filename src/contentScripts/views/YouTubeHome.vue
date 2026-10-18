@@ -4,28 +4,47 @@ import { useI18n } from 'vue-i18n'
 
 import { continueHomeFeed } from '~/contentScripts/feedBridge'
 import { settings } from '~/logic'
-import type { ContinuationRequest, FeedParseResult, VideoCard } from '~/youtube/feed'
+import type { ContinuationRequest, FeedCard, FeedParseResult } from '~/youtube/feed'
 import { cardOpenUrl } from '~/youtube/feed'
 
 const props = defineProps<{
   initial: FeedParseResult
+  surface: 'home' | 'search'
+  query: string
 }>()
 
 const { t, locale } = useI18n()
-const cards = ref<VideoCard[]>([])
+const cards = ref<FeedCard[]>([])
 const continuation = ref<ContinuationRequest | undefined>()
 const loadingMore = ref(false)
 const continuationError = ref(false)
 const settingsOpen = ref(false)
-const searchText = ref('')
+const searchText = ref(props.query)
 const viewport = ref<HTMLElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
 const seenTokens = new Set<string>()
 
-function videosOf(result: FeedParseResult): VideoCard[] {
+function cardsOf(result: FeedParseResult): FeedCard[] {
   if (result.kind !== 'page')
     return []
-  return result.cards.filter((card): card is VideoCard => card.kind === 'video')
+  if (props.surface === 'home')
+    return result.cards.filter(card => card.kind === 'video')
+  return result.cards
+}
+
+function cardKey(card: FeedCard): string {
+  switch (card.kind) {
+    case 'video':
+      return `video:${card.videoId}`
+    case 'channel':
+      return `channel:${card.channelId}`
+    case 'playlist':
+      return `playlist:${card.playlistId}`
+    default: {
+      const _exhaustive: never = card
+      return _exhaustive
+    }
+  }
 }
 
 function applyPage(result: FeedParseResult, append: boolean) {
@@ -34,7 +53,7 @@ function applyPage(result: FeedParseResult, append: boolean) {
     return
   }
   continuationError.value = false
-  cards.value = append ? [...cards.value, ...videosOf(result)] : videosOf(result)
+  cards.value = append ? [...cards.value, ...cardsOf(result)] : cardsOf(result)
   const next = result.continuation
   if (!next || seenTokens.has(next.token)) {
     continuation.value = undefined
@@ -74,6 +93,11 @@ const wallpaperUrl = computed(() => {
 watch(() => settings.value.language, (language) => {
   if (language)
     locale.value = language
+}, { immediate: true })
+
+watch([() => props.surface, () => props.query, locale], () => {
+  if (props.surface === 'search')
+    document.title = t('youtube_search.heading', { query: props.query })
 }, { immediate: true })
 
 function submitSearch() {
@@ -138,14 +162,15 @@ onMounted(() => {
     </header>
     <div ref="viewport" class="home__scroll">
       <p v-if="cards.length === 0" class="home__status">
-        {{ t('youtube_home.empty') }}
+        {{ t(surface === 'search' ? 'youtube_search.empty' : 'youtube_home.empty') }}
       </p>
       <div class="home__grid" :style="{ '--home-columns': String(columns) }">
-        <a v-for="card in cards" :key="card.videoId" class="home__card" :href="cardOpenUrl(card)">
-          <img class="home__thumb" :src="card.thumbnailUrl" alt="">
-          <span class="home__title">{{ card.title }}</span>
-          <span class="home__meta">{{ card.channel.name }}</span>
-          <span v-if="card.durationText || card.viewCountText" class="home__meta">
+        <a v-for="card in cards" :key="cardKey(card)" class="home__card" :href="cardOpenUrl(card)">
+          <img v-if="card.kind === 'video'" class="home__thumb" :src="card.thumbnailUrl" alt="">
+          <span class="home__title">{{ card.kind === 'channel' ? card.name : card.title }}</span>
+          <span v-if="card.kind === 'video'" class="home__meta">{{ card.channel.name }}</span>
+          <span v-else class="home__meta">{{ t(card.kind === 'channel' ? 'youtube_search.channel' : 'youtube_search.playlist') }}</span>
+          <span v-if="card.kind === 'video' && (card.durationText || card.viewCountText)" class="home__meta">
             {{ [card.durationText, card.viewCountText].filter(Boolean).join(' · ') }}
           </span>
         </a>

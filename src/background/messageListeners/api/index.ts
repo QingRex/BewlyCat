@@ -5,11 +5,8 @@ import { API_REQUEST_PORT } from '~/constants/apiRequest'
 import { onMessage } from '~/utils/messaging'
 
 import { apiListenerFactory } from '../../utils'
-import API_SEARCH from './search'
 
 export const API_COLLECTION = {
-  SEARCH: API_SEARCH,
-
   [Symbol.iterator]() {
     return Object.values(this).values()
   },

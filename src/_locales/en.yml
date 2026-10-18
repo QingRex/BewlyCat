@@ -1922,3 +1922,8 @@ youtube_home:
   wallpaper: Wallpaper URL
   grid_density: Grid density
   close: Done
+youtube_search:
+  heading: '{query} - YouTube'
+  empty: No results
+  channel: Channel
+  playlist: Playlist

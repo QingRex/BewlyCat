@@ -1822,3 +1822,8 @@ youtube_home:
   wallpaper: 壁纸地址
   grid_density: 网格密度
   close: 完成
+youtube_search:
+  heading: '{query} - YouTube'
+  empty: 没有结果
+  channel: 频道
+  playlist: 播放列表

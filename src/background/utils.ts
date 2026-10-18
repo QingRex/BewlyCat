@@ -219,16 +219,6 @@ async function performApiRequest(message: Message, api: API, cookies?: Browser.C
         requestHeaders['firefox-multi-account-cookie'] = cookieStr
       }
 
-      // 添加Referer以防止风控
-      if (!requestHeaders.Referer) {
-        requestHeaders.Referer = 'https://www.bilibili.com/'
-      }
-
-      // 对于UP主空间相关的API，设置正确的Referer
-      if (requestUrl.includes('/x/space/wbi/arc/search') && targetParams.mid) {
-        requestHeaders.Referer = `https://space.bilibili.com/${targetParams.mid}/`
-      }
-
       // get cant take body
       const fetchOpt: any = {
         method,

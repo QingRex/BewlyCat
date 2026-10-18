@@ -8,7 +8,7 @@ import type { FeedParseResult } from '~/youtube/feed'
 
 import { version } from '../../package.json'
 import { readHomeFeed } from './feedBridge'
-import { setHomeGridHidden } from './homeVisibility'
+import { setFeedSurfaceHidden } from './homeVisibility'
 import type { PageIdentity } from './pageIdentity'
 import { readPageIdentity } from './pageIdentity'
 import type { PageLoadingGuard } from './pageLoading'
@@ -38,7 +38,16 @@ function releaseExtensionSurface() {
 
 const bundledStyleText = (globalThis as { __BEWLYCAT_BUNDLED_STYLE_TEXT__?: string }).__BEWLYCAT_BUNDLED_STYLE_TEXT__ ?? ''
 
-function mountHome(initial: FeedParseResult) {
+function searchQueryOf(href: string): string {
+  try {
+    return new URL(href).searchParams.get('search_query')?.trim() ?? ''
+  }
+  catch {
+    return ''
+  }
+}
+
+function mountFeed(initial: FeedParseResult, surface: 'home' | 'search', href: string) {
   const container = document.createElement('div')
   container.id = BEWLY_HOST_ID
   Object.assign(container.style, {
@@ -53,7 +62,11 @@ function mountHome(initial: FeedParseResult) {
   root.style.height = '100%'
   shadow.append(style, root)
   ;(document.body ?? document.documentElement).append(container)
-  const app = createApp(App, { initial })
+  const app = createApp(App, {
+    initial,
+    surface,
+    query: surface === 'search' ? searchQueryOf(href) : '',
+  })
   app.use(i18n)
   app.mount(root)
   Reflect.set(container, '__bewlyCatDisposeApp__', () => {
@@ -65,10 +78,10 @@ function mountHome(initial: FeedParseResult) {
 let homeGeneration = 0
 let mountedHref: string | undefined
 
-async function openHome(href: string) {
+async function openFeed(kind: 'home' | 'search', href: string) {
   const generation = ++homeGeneration
   const body = await readHomeFeed()
-  if (generation !== homeGeneration || readPageIdentity(location.href).kind !== 'home')
+  if (generation !== homeGeneration || readPageIdentity(location.href).kind !== kind)
     return
   if (body.kind !== 'parsed' || body.result.kind !== 'page') {
     releaseExtensionSurface()
@@ -77,35 +90,35 @@ async function openHome(href: string) {
   }
   try {
     releaseExtensionSurface()
-    setHomeGridHidden(true)
-    mountHome(body.result)
+    setFeedSurfaceHidden(kind, true)
+    mountFeed(body.result, kind, href)
     mountedHref = href
   }
   catch (error) {
     releaseExtensionSurface()
     contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.release()
-    console.error('[BewlyCat] 首页挂载失败:', error)
+    console.error('[BewlyCat] 页面挂载失败:', error)
   }
 }
 
 /**
- * 自定义视图只在首页且解析成功后挂上。搜索页留到下一阶段。
- * 离开首页立即卸掉宿主并撤销隐藏。
+ * 首页和搜索都要等解析成功才挂。空的搜索结果是成功的空页。
+ * 离开这两页立即卸掉宿主并撤销隐藏。
  */
 function reconcile(page: PageIdentity, href: string) {
-  if (page.kind === 'home' && mountedHref === href && document.getElementById(BEWLY_HOST_ID))
+  if ((page.kind === 'home' || page.kind === 'search') && mountedHref === href && document.getElementById(BEWLY_HOST_ID))
     return
 
   homeGeneration++
   mountedHref = undefined
   releaseExtensionSurface()
-  setHomeGridHidden(false)
+  setFeedSurfaceHidden('home', false)
 
   switch (page.kind) {
     case 'home':
-      void openHome(href)
-      return
     case 'search':
+      void openFeed(page.kind, href)
+      return
     case 'passthrough':
       contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.release()
       return
